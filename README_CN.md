@@ -24,7 +24,7 @@
 - **批量创建** — 3 个以上任务用 `batch_create_tasks` 一次搞定
 
 **质量护栏**
-- **自动去重** — 创建前一律 `search_tasks`；若已存在相同任务则跳过创建
+- **自动去重** — 创建前一律 `search`；若已存在相同任务则跳过创建
 - **不臆造日期** — 用户没提日期就留空，绝不乱猜
 - **智能优先级** — 按截止日期远近自动分配 `0/1/3/5`（今天/明天=高，3–7 天=中，>7 天=低）
 
@@ -38,14 +38,14 @@
 "提醒我明天下午3点开会"
   → 解析：   title="开会", due_date=2026-06-25T15:00:00+0800, priority=5
   → 路由：   从 config.json 解析项目（默认 Inbox）
-  → 去重：   search_tasks("开会") → 无重复
-  → 创建：   mcp_ticktick_create_task(...)
+  → 去重：   search("开会") → 无重复
+  → 创建：   create_task(task={"title":"开会", ...})
   → 确认：   "已添加到滴答清单：开会 | 截止: 明天 15:00 | 优先级: 高"
 ```
 
 ## 前置要求
 
-- 已为你的 AI Agent 连接 **TickTick MCP Server**，提供 `mcp_ticktick_*` 工具。参见下文[连接 MCP Server](#连接-ticktick-mcp-server)——这是一次性的远程注册，无需本地安装包。
+- 已为你的 AI Agent 连接 **TickTick MCP Server**，提供 dida365 工具（`list_projects`、`create_task`、`search` 等）。参见下文[连接 MCP Server](#连接-ticktick-mcp-server)——这是一次性的远程注册，无需本地安装包。
 
 ## 连接 TickTick MCP Server
 
@@ -197,7 +197,7 @@ cp codex/codex.md /path/to/your/project/codex.md
 
 ## 配置说明
 
-Skill 把项目映射存在本地 `config.json`。首次使用时调用 `get_projects()` 列出项目，让你选择默认项目。
+Skill 把项目映射存在本地 `config.json`。首次使用时调用 `list_projects()` 列出项目，让你选择默认项目。
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|

@@ -17,9 +17,9 @@ Fast, smart task creation and management for TickTick (滴答清单) via MCP too
 
 ## MCP Setup
 
-This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamable HTTP service at `https://mcp.dida365.com` (server name `dida365`). It must be registered with OpenClaw before any `mcp_ticktick_*` tool works.
+This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamable HTTP service at `https://mcp.dida365.com` (server name `dida365`). It must be registered with OpenClaw before any of its tools (`list_projects`, `create_task`, `search`, etc. — see `references/ticktick-mcp-tools-reference.md`) work.
 
-**Guardrail.** If the `mcp_ticktick_*` tools are absent, or a call fails with "tool not found" / "Needs authentication" / "MCP not connected", **stop and run the onboarding below** — never fabricate task data, never silently skip. (Detection is reactive — on a failed or missing tool call — not a check at task start.)
+**Guardrail.** If the dida365 tools are absent, or a call fails with "tool not found" / "Needs authentication" / "MCP not connected", **stop and run the onboarding below** — never fabricate task data, never silently skip. (Detection is reactive — on a failed or missing tool call — not a check at task start.)
 
 **Onboarding — guide the user through this immediately when tools are missing:**
 
@@ -52,7 +52,7 @@ Official guide: https://help.dida365.com/articles/7438132116019216384
 
 On first invocation, if no project config exists:
 
-1. Call `mcp_ticktick_get_projects()` to list all projects
+1. Call `list_projects()` to list all projects
 2. Ask the user which project to use as default for agent-created tasks
 3. Save to `config.json` in skill directory:
    ```json
@@ -72,7 +72,7 @@ On first invocation, if no project config exists:
 User input
   → Parse: title (required), content, dates, priority
   → Resolve project (user-specified → notification source → default)
-  → Dedup: search_tasks(title) first
+  → Dedup: search(title) first
   → Create: single task OR batch (3+ items)
   → Confirm: one-line summary
 
@@ -145,33 +145,35 @@ When user forwards notification/announcement text:
 
 ## Tool Usage Guide
 
+> Tool names below are the server's real names (see `references/ticktick-mcp-tools-reference.md`). The server does NOT provide `get_engaged_tasks` / `search_tasks` / `mcp_ticktick_*` — those are fictional. Task creation uses a `task` object with `title` + `projectId` (+ optional `content`, `dueDate`, `startDate`, `priority`, `tags`).
+
 ### Create
 
-- **Single task**: `mcp_ticktick_create_task(title, project_id, content?, start_date?, due_date?, priority?)`
-- **Batch (3+ tasks)**: `mcp_ticktick_batch_create_tasks(tasks=[{...}, ...])`
-- **Subtask**: `mcp_ticktick_create_subtask(subtask_title, parent_task_id, project_id)`
+- **Single task**: `create_task(task={"title": ..., "projectId": ..., "dueDate": ..., "priority": ...})`
+- **Batch (3+ tasks)**: `batch_add_tasks(tasks=[{"title":..., "projectId":...}, ...])`
+- **Subtask**: set `parentId` on the task object in `create_task` (no separate subtask tool)
 
 ### Query
 
 | Tool | What it returns |
 |------|----------------|
-| `get_engaged_tasks()` | High priority + due today/overdue |
-| `get_next_tasks()` | Medium priority + due tomorrow |
-| `get_tasks_due_today()` | Tasks due today |
-| `get_tasks_due_this_week()` | Tasks due within 7 days |
-| `get_overdue_tasks()` | Overdue tasks |
-| `search_tasks(search_term)` | Search by keyword |
-| `get_project_tasks(project_id)` | All tasks in a project |
+| `list_undone_tasks_by_time_query(query_command="today")` | Undone tasks for today |
+| `list_undone_tasks_by_time_query(query_command="tomorrow")` | Undone tasks due tomorrow |
+| `list_undone_tasks_by_time_query(query_command="next7day")` | Undone tasks due within 7 days |
+| `list_undone_tasks_by_date(search={"startDate":..., "endDate":...})` | Undone tasks in a date range (max 14 days) |
+| `filter_tasks(filter={"priority":[5], "status":[0]})` | Structured filter (priority/status/tag/project) |
+| `search(query="...")` | Keyword search — **use this for dedup** |
+| `get_project_with_undone_tasks(project_id)` | Undone tasks in a project |
 
 ### Modify
 
-- **Complete**: `mcp_ticktick_complete_task(project_id, task_id)`
-- **Update**: `mcp_ticktick_update_task(task_id, project_id, title?, content?, due_date?, priority?)`
-- **Delete**: `mcp_ticktick_delete_task(project_id, task_id)`
+- **Complete**: `complete_task(project_id, task_id)`
+- **Update**: `update_task(task_id, task={"projectId":..., "dueDate":...})` — send only changed fields
+- **Delete**: `delete_task(project_id, task_id)`
 
 ## Common Pitfalls
 
-1. **Always dedup first** — Call `search_tasks` before creating. Duplicate tasks from repeated runs are the #1 issue.
+1. **Always dedup first** — Call `search(query=title)` before creating. Duplicate tasks from repeated runs are the #1 issue.
 2. **Date format must be ISO 8601 with timezone** — `2026-05-20T10:00:00+0800`, not `2026-05-20T10:00:00Z` unless user is in UTC.
 3. **Don't fabricate dates** — If the user doesn't mention a date, leave it empty. Don't guess.
 4. **project_id from config, never hardcode** — Always resolve through config.json or `get_projects()`. Project IDs differ per account.
@@ -183,15 +185,15 @@ When user forwards notification/announcement text:
 ### Update Operations
 
 When the user asks to update an existing task (e.g., change due date, title, or priority):
-1. **Search first**: Call `search_tasks(title)` to locate the task (required for dedup and to get the task_id).
-2. **Update**: Use `mcp_ticktick_update_task` with the found task_id and only the fields to be changed.
+1. **Search first**: Call `search(query=title)` to locate the task (required for dedup and to get the task_id).
+2. **Update**: Use `update_task(task_id, task={"projectId":..., <only changed fields>})` with the found task_id.
 3. **Confirm**: Provide a one-line summary of the update.
 
 Note: For update operations, set `dedup_searched: true` in the output block.
 
 ### Dedup Skip Behavior
 
-When `search_tasks` finds a duplicate and the agent decides to skip creation:
+When `search` finds a duplicate and the agent decides to skip creation:
 - `action`: `dedup_skip`
 - `title`: Set to the **intended task title** (the name the user gave or that would have been created).
 - `priority`: Set to the priority that **would have been assigned** (e.g. `0` for an undated memo).
@@ -209,7 +211,7 @@ This ensures the output block reports what was intentionally skipped.
 | User forwards notification text | Apply notification parsing template |
 | "提醒我明天下午3点开会" | title="开会", start_date=tomorrow 15:00 |
 | "把这条加到滴答清单" + text | Apply notification parsing template |
-| "我有什么待办" | `get_engaged_tasks()` + `get_next_tasks()` |
+| "我有什么待办" | `list_undone_tasks_by_time_query("today")` + `list_undone_tasks_by_time_query("tomorrow")` |
 
 ## Response Format
 
@@ -229,5 +231,5 @@ After creating a task, verify:
 - [ ] Due date matches user intent (not fabricated)
 - [ ] Priority aligns with urgency rules above
 - [ ] Project matches routing logic
-- [ ] No duplicate exists (search_tasks returned empty)
+- [ ] No duplicate exists (search returned empty)
 - [ ] Response format is the one-line confirmation

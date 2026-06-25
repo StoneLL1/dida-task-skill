@@ -24,7 +24,7 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 - **Batch creation** — 3+ tasks in a single `batch_create_tasks` call
 
 **Quality guardrails**
-- **Deduplication** — always `search_tasks` before creating; skips creation when a match already exists
+- **Deduplication** — always `search` before creating; skips creation when a match already exists
 - **No fabricated dates** — if the user didn't mention a date, it stays empty
 - **Smart priority** — auto-assigns `0/1/3/5` by deadline proximity (today/tomorrow → High, 3–7 days → Medium, >7 days → Low)
 
@@ -38,14 +38,14 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 "提醒我明天下午3点开会"
   → Parse:    title="开会", due_date=2026-06-25T15:00:00+0800, priority=5
   → Route:    resolve project from config.json (Inbox by default)
-  → Dedup:    search_tasks("开会") → no match
-  → Create:   mcp_ticktick_create_task(...)
+  → Dedup:    search("开会") → no match
+  → Create:   create_task(task={"title":"开会", ...})
   → Confirm:  "已添加到滴答清单：开会 | 截止: 明天 15:00 | 优先级: 高"
 ```
 
 ## Prerequisites
 
-- A **TickTick MCP server** connected to your AI agent, exposing the `mcp_ticktick_*` tools. See [Connect the MCP server](#connect-the-ticktick-mcp-server) below — it's a one-time remote registration, no local package to install.
+- A **TickTick MCP server** connected to your AI agent, exposing the dida365 tools (`list_projects`, `create_task`, `search`, etc.). See [Connect the MCP server](#connect-the-ticktick-mcp-server) below — it's a one-time remote registration, no local package to install.
 
 ## Connect the TickTick MCP server
 
@@ -197,7 +197,7 @@ After installation, try these with your agent:
 
 ## Configuration
 
-The skill stores project mapping in a local `config.json`. On first use it calls `get_projects()`, lists your projects, and asks you to pick a default.
+The skill stores project mapping in a local `config.json`. On first use it calls `list_projects()`, lists your projects, and asks you to pick a default.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
