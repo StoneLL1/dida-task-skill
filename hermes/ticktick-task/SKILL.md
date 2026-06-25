@@ -34,11 +34,16 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
 
 **Onboarding — guide the user through this immediately when tools are missing (Hermes has no `add` CLI, so registration is done in Hermes's MCP config):**
 
-1. Register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` through Hermes's MCP server configuration. Give the user the exact values to paste: server name `dida365`, URL `https://mcp.dida365.com`, transport Streamable HTTP. If `dida365` is already registered, skip this and go to step 2. (This skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies.)
-2. **Hand off to the user** for OAuth: instruct them to complete the browser login when Hermes prompts. (The agent cannot complete OAuth itself.)
+1. Run the OAuth login helper shipped with this skill. It opens the user's browser to the TickTick login page and, after the user logs in and authorizes, prints a Bearer token (and saves it to `scripts/token.json`):
+   ```bash
+   python scripts/oauth_login.py login
+   ```
+2. Tell the user to register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` in Hermes's MCP config, using the printed token as a Bearer header. If `dida365` is already registered, update its headers instead. Give them the exact values to paste: server name `dida365`, URL `https://mcp.dida365.com`, transport Streamable HTTP, header `Authorization: Bearer <PRINTED_TOKEN>`. (This skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies.)
 3. Once the user confirms the server is connected, retry the original task operation.
 
-**Bearer Token alternative** (skips OAuth entirely — the user only pastes a token once): register the server with an `Authorization: Bearer YOUR_TOKEN_HERE` header. The token must come from the user — never invent one. Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
+**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. Renew it: `python scripts/oauth_login.py refresh`, then tell the user to update the Bearer header in Hermes's config with the new printed token. If refresh exits non-zero, re-run `oauth_login.py login` to open the browser again.
+
+**Bearer Token alternative** (long-lived, no browser): instead of the OAuth script, the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and use it directly as the Bearer header value in step 2. The token must come from the user — never invent one.
 
 Official guide: https://help.dida365.com/articles/7438132116019216384
 

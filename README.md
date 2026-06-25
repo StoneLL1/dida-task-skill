@@ -51,20 +51,26 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 
 The TickTick MCP server is a **remote Streamable HTTP service** at `https://mcp.dida365.com` (server name `dida365`). Register it once with your agent runtime; auth is **OAuth** (browser, recommended) or a **Bearer Token**.
 
+> **OAuth login helper.** Each platform ships `scripts/oauth_login.py` — a pure-Python (stdlib only) script that opens your browser to the TickTick login page and prints a Bearer token after you log in. Use it on runtimes that don't auto-open the browser (especially Claude Code, whose OAuth requires a manual `/mcp` step otherwise). Run `python scripts/oauth_login.py login`, then wire the printed `Authorization: Bearer …` line into your platform's MCP config below. When the token later expires, `python scripts/oauth_login.py refresh` renews it (if the server issued a `refresh_token`); if refresh fails, re-run `login`. Note: dida365's authorization-server metadata advertises only the `authorization_code` grant, so refresh-token renewal is likely but not guaranteed — the script falls back to a fresh browser login when needed.
+
 > If `dida365` is already registered, skip the `add` command in your platform's step and go straight to OAuth.
 
 <details>
 <summary><b>Claude Code</b></summary>
 
+Claude Code's `claude mcp add` only writes config — OAuth normally needs a manual `/mcp` step. To skip it, run the login helper first, then register with the printed token:
+
+```bash
+python scripts/oauth_login.py login          # opens browser; prints "Authorization: Bearer <TOKEN>"
+claude mcp add --transport http dida365 https://mcp.dida365.com --header "Authorization: Bearer <TOKEN>"
+```
+
+Or the manual `/mcp` path:
+
 ```bash
 claude mcp add --transport http dida365 https://mcp.dida365.com
 ```
 Then run `/mcp` in your session and complete OAuth in the browser.
-
-Bearer Token variant:
-```bash
-claude mcp add --transport http dida365 https://mcp.dida365.com --header "Authorization: Bearer YOUR_TOKEN_HERE"
-```
 
 </details>
 
@@ -74,7 +80,14 @@ claude mcp add --transport http dida365 https://mcp.dida365.com --header "Author
 ```bash
 codex mcp add dida365 --url https://mcp.dida365.com
 ```
-OAuth login is prompted automatically.
+OAuth login is prompted automatically. If it is not, use the login helper and pass the token via an env var:
+
+```bash
+python scripts/oauth_login.py login
+export DIDA365_TOKEN="<TOKEN>"
+codex mcp remove dida365
+codex mcp add dida365 --url https://mcp.dida365.com --bearer-token-env-var DIDA365_TOKEN
+```
 
 </details>
 

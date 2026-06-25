@@ -25,7 +25,19 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote service a
 2. OAuth login is prompted automatically right after the command runs — **hand off to the user** to complete it in the browser. (The agent cannot complete OAuth itself.)
 3. Once the user confirms the `dida365` server is connected, retry the original task operation.
 
-**Bearer Token alternative** (skips OAuth entirely — fully automatable): if the user provides a Bearer token, register with the header and no browser login is needed. The token must come from the user — never invent one. Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
+**Fallback if Codex's auto-OAuth does not fire.** Run the login helper shipped with this skill — it opens the browser and prints a Bearer token:
+   ```bash
+   python scripts/oauth_login.py login
+   ```
+   Codex reads the token from an environment variable, so export it and re-add the server with `--bearer-token-env-var`:
+   ```bash
+   codex mcp remove dida365
+   export DIDA365_TOKEN="<the access token printed by the script>"
+   codex mcp add dida365 --url https://mcp.dida365.com --bearer-token-env-var DIDA365_TOKEN
+   ```
+   **Token expiry:** if a call fails with 401, renew with `python scripts/oauth_login.py refresh`, update the env var, and retry. If refresh exits non-zero, re-run `oauth_login.py login`.
+
+**Bearer Token alternative** (long-lived, no browser): the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and use it in place of the script-printed token above (same `--bearer-token-env-var` wiring). The token must come from the user — never invent one.
 
 Official guide: https://help.dida365.com/articles/7438132116019216384
 

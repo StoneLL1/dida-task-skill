@@ -23,33 +23,28 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
 
 **Onboarding — guide the user through this immediately when tools are missing:**
 
-1. Tell the user to add the `dida365` HTTP MCP server to OpenClaw's MCP config, and give them the exact snippet to paste. If `dida365` is already registered, skip this and go to step 2:
+1. Run the OAuth login helper shipped with this skill. It opens the user's browser to the TickTick login page and, after the user logs in and authorizes, prints a Bearer token (and saves it to `scripts/token.json`):
+   ```bash
+   python scripts/oauth_login.py login
+   ```
+2. Tell the user to add the `dida365` HTTP MCP server to OpenClaw's MCP config using the printed token. If `dida365` is already registered, update its `headers` instead. Give them the exact snippet to paste (replace `<PRINTED_TOKEN>` with the script's output):
    ```json
    {
      "mcpServers": {
        "dida365": {
-         "url": "https://mcp.dida365.com"
+         "url": "https://mcp.dida365.com",
+         "headers": {
+           "Authorization": "Bearer <PRINTED_TOKEN>"
+         }
        }
      }
    }
    ```
-2. **Hand off to the user** for OAuth: instruct them to complete the browser login when OpenClaw prompts. (The agent cannot complete OAuth itself.)
 3. Once the user confirms the server is connected, retry the original task operation.
 
-**Bearer Token alternative** (skips OAuth entirely — fully automatable once the user supplies a token): add a `headers` field with the user's token — never invent one:
-```json
-{
-  "mcpServers": {
-    "dida365": {
-      "url": "https://mcp.dida365.com",
-      "headers": {
-        "Authorization": "Bearer YOUR_TOKEN_HERE"
-      }
-    }
-  }
-}
-```
-Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
+**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. Renew it: `python scripts/oauth_login.py refresh`, then tell the user to update the Bearer token in OpenClaw's config with the new printed value. If refresh exits non-zero, re-run `oauth_login.py login` to open the browser again.
+
+**Bearer Token alternative** (long-lived, no browser): instead of the OAuth script, the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and paste it directly as the Bearer value in the snippet above. The token must come from the user — never invent one.
 
 Official guide: https://help.dida365.com/articles/7438132116019216384
 

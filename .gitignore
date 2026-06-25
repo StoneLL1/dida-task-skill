@@ -1,3 +1,5 @@
 .DS_Store
 *.pre_skillopt.bak
 _skillopt/
+token.json
+**/token.json
