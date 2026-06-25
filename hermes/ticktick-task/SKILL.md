@@ -30,11 +30,11 @@ Fast, smart task creation and management for TickTick (滴答清单) via MCP too
 
 This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamable HTTP service at `https://mcp.dida365.com` (server name `dida365`). It must be registered with Hermes before any `mcp_ticktick_*` tool works.
 
-**Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
+**Guardrail.** If the `mcp_ticktick_*` tools are absent, or a call fails with "tool not found" / "Needs authentication" / "MCP not connected", **stop and run the onboarding below** — never fabricate task data, never silently skip. (Detection is reactive — on a failed or missing tool call — not a check at task start.)
 
 **Onboarding — guide the user through this immediately when tools are missing (Hermes has no `add` CLI, so registration is done in Hermes's MCP config):**
 
-1. Register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` through Hermes's MCP server configuration (the runtime manages `mcp_servers`; this skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies). Give the user the exact endpoint and server name so they can paste it into Hermes's config UI/file.
+1. Register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` through Hermes's MCP server configuration. Give the user the exact values to paste: server name `dida365`, URL `https://mcp.dida365.com`, transport Streamable HTTP. If `dida365` is already registered, skip this and go to step 2. (This skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies.)
 2. **Hand off to the user** for OAuth: instruct them to complete the browser login when Hermes prompts. (The agent cannot complete OAuth itself.)
 3. Once the user confirms the server is connected, retry the original task operation.
 

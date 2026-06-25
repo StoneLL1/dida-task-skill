@@ -51,6 +51,8 @@
 
 TickTick MCP Server 是一个**远程 Streamable HTTP 服务**，地址 `https://mcp.dida365.com`（服务名 `dida365`）。在你的 Agent 运行时里注册一次即可；授权用 **OAuth**（浏览器，推荐）或 **Bearer Token**。
 
+> 若 `dida365` 已注册，跳过你所在平台步骤里的 `add` 命令，直接进入 OAuth。
+
 <details>
 <summary><b>Claude Code</b></summary>
 

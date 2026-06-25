@@ -51,6 +51,8 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 
 The TickTick MCP server is a **remote Streamable HTTP service** at `https://mcp.dida365.com` (server name `dida365`). Register it once with your agent runtime; auth is **OAuth** (browser, recommended) or a **Bearer Token**.
 
+> If `dida365` is already registered, skip the `add` command in your platform's step and go straight to OAuth.
+
 <details>
 <summary><b>Claude Code</b></summary>
 

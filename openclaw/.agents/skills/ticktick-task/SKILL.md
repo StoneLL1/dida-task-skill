@@ -19,11 +19,11 @@ Fast, smart task creation and management for TickTick (滴答清单) via MCP too
 
 This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamable HTTP service at `https://mcp.dida365.com` (server name `dida365`). It must be registered with OpenClaw before any `mcp_ticktick_*` tool works.
 
-**Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
+**Guardrail.** If the `mcp_ticktick_*` tools are absent, or a call fails with "tool not found" / "Needs authentication" / "MCP not connected", **stop and run the onboarding below** — never fabricate task data, never silently skip. (Detection is reactive — on a failed or missing tool call — not a check at task start.)
 
 **Onboarding — guide the user through this immediately when tools are missing:**
 
-1. Tell the user to add the `dida365` HTTP MCP server to OpenClaw's MCP config, and give them the exact snippet to paste:
+1. Tell the user to add the `dida365` HTTP MCP server to OpenClaw's MCP config, and give them the exact snippet to paste. If `dida365` is already registered, skip this and go to step 2:
    ```json
    {
      "mcpServers": {

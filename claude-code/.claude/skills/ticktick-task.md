@@ -16,11 +16,11 @@ Fast, smart task creation and management for TickTick (滴答清单) via MCP too
 
 This skill drives the **TickTick (滴答清单) MCP server**, a remote service at `https://mcp.dida365.com`. Claude Code must have it registered before any `mcp_ticktick_*` tool works.
 
-**Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
+**Guardrail.** If the `mcp_ticktick_*` tools are absent, or a call fails with "tool not found" / "Needs authentication" / "MCP not connected", **stop and run the onboarding below** — never fabricate task data, never silently skip. (Detection is reactive — on a failed or missing tool call — not a check at task start.)
 
 **Onboarding — do this automatically:**
 
-1. Run the registration command directly (do not ask first — it only adds a local config entry to `.claude.json`):
+1. Run the registration command directly (do not ask first — it only adds a local config entry to `.claude.json`). If `dida365` is already registered, skip this and go to step 2:
    ```bash
    claude mcp add --transport http dida365 https://mcp.dida365.com
    ```
