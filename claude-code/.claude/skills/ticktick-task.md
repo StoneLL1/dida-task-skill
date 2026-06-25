@@ -31,11 +31,11 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote service a
    ```
 3. Retry the original task operation.
 
-**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. Renew it and re-register:
+**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. dida365 does NOT support refresh tokens (its metadata advertises only the `authorization_code` grant and rejects `offline_access`), so there is no `refresh` subcommand. Re-run the login helper to get a fresh token, then re-register:
    ```bash
-   python scripts/oauth_login.py refresh
+   python scripts/oauth_login.py login
    ```
-   Then re-run step 2 with the new token. The refresh command uses a `refresh_token` when the server issued one; if none was issued (or refresh fails) it exits non-zero — in that case re-run `oauth_login.py login` to open the browser again.
+   Then re-run step 2 with the new printed token.
 
 **Bearer Token alternative** (long-lived, no browser): instead of the OAuth script, the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and pass it directly to the `--header` in step 2. The token must come from the user — never invent one.
 

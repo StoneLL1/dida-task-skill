@@ -51,7 +51,7 @@
 
 TickTick MCP Server 是一个**远程 Streamable HTTP 服务**，地址 `https://mcp.dida365.com`（服务名 `dida365`）。在你的 Agent 运行时里注册一次即可；授权用 **OAuth**（浏览器，推荐）或 **Bearer Token**。
 
-> **OAuth 登录脚本。** 每个平台附带 `scripts/oauth_login.py`（纯 Python 标准库，无第三方依赖），运行后会自动打开浏览器到滴答清单登录页，登录授权后打印一个 Bearer token。用于那些不会自动弹浏览器的运行时（尤其是 Claude Code——否则要手动敲 `/mcp`）。用法：`python scripts/oauth_login.py login`，然后把打印的 `Authorization: Bearer …` 配进你所在平台的 MCP 配置。token 过期后用 `python scripts/oauth_login.py refresh` 续期（前提是服务器签发了 `refresh_token`）；若续期失败则重跑 `login`。注意：dida365 的授权服务器元数据只声明 `authorization_code` 授权，refresh 续期大概率可用但不保证——脚本在需要时会回退为重新浏览器登录。
+> **OAuth 登录脚本。** 每个平台附带 `scripts/oauth_login.py`（纯 Python 标准库，无第三方依赖），运行后会自动打开浏览器到滴答清单登录页，登录授权后打印一个 Bearer token。用于那些不会自动弹浏览器的运行时（尤其是 Claude Code——否则要手动敲 `/mcp`）。用法：`python scripts/oauth_login.py login`，然后把打印的 `Authorization: Bearer …` 配进你所在平台的 MCP 配置。**关于 token 过期：** dida365 **不支持** refresh token——其授权服务器元数据只声明 `authorization_code` 授权，且会拒绝 `offline_access`，因此没有 `refresh` 子命令。token 过期时（401 / "Needs authentication"），直接重跑 `oauth_login.py login`，重新打开浏览器登录即可。
 
 > 若 `dida365` 已注册，跳过你所在平台步骤里的 `add` 命令，直接进入 OAuth。
 

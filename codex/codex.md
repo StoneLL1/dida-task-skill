@@ -35,7 +35,7 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote service a
    export DIDA365_TOKEN="<the access token printed by the script>"
    codex mcp add dida365 --url https://mcp.dida365.com --bearer-token-env-var DIDA365_TOKEN
    ```
-   **Token expiry:** if a call fails with 401, renew with `python scripts/oauth_login.py refresh`, update the env var, and retry. If refresh exits non-zero, re-run `oauth_login.py login`.
+   **Token expiry:** if a call fails with 401, re-run `python scripts/oauth_login.py login` (dida365 does NOT support refresh tokens — re-login is the only renewal path), update the env var with the new printed token, and retry.
 
 **Bearer Token alternative** (long-lived, no browser): the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and use it in place of the script-printed token above (same `--bearer-token-env-var` wiring). The token must come from the user — never invent one.
 

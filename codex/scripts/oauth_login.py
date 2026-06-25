@@ -7,7 +7,6 @@ prints a Bearer token ready to wire into the platform's MCP server config.
 
 Usage:
     python oauth_login.py login      # default: open browser, log in, print token
-    python oauth_login.py refresh    # renew an expired access token via refresh_token
 
 The script is pure Python standard library (no third-party packages).
 
@@ -17,16 +16,17 @@ Flow:
     3. Open browser to /oauth/authorize (user logs in + authorizes)
     4. Catch the redirect on a local HTTP server (port 8765)
     5. Exchange the authorization code for tokens -> POST /oauth/token
-    6. Persist tokens to token.json (gitignored) next to this script
+    6. Persist the access token to token.json (gitignored) next to this script
     7. Print:  Authorization: Bearer <access_token>
 
-Known limitation: the dida365 authorization-server metadata advertises only
-`authorization_code` as a supported grant, yet the registration endpoint accepts
-`refresh_token` in the client grant list. This script requests the `offline_access`
-scope (the standard OAuth 2.1 trigger for refresh-token issuance) to encourage the
-server to return a `refresh_token`, but whether dida365 honors it can only be
-confirmed by completing a real login. If the token response still lacks
-`refresh_token`, `refresh` exits non-zero so the caller re-runs a full login.
+Token expiry: dida365 does NOT support refresh tokens. The authorization-server
+metadata advertises only the `authorization_code` grant, the protected-resource
+metadata lists only the `tasks:read tasks:write` scopes (requesting
+`offline_access` is rejected with `invalid_scope`), and login returns no
+`refresh_token`. The access token therefore cannot be renewed silently — when it
+expires (401 / "Needs authentication"), re-run `oauth_login.py login` to open
+the browser and log in again. The script deliberately does NOT implement a
+refresh subcommand to avoid implying renewal works.
 """
 
 import base64
@@ -47,7 +47,7 @@ AS_METADATA_URL = "https://dida365.com/.well-known/oauth-authorization-server"
 REGISTER_PATH = "/oauth/register"
 AUTHORIZE_PATH = "/oauth/authorize"
 TOKEN_PATH = "/oauth/token"
-SCOPES = "tasks:read tasks:write offline_access"
+SCOPES = "tasks:read tasks:write"
 REDIRECT_PORT = 8765
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/callback"
 CLIENT_NAME = "ticktick-skill-oauth-helper"
@@ -86,7 +86,7 @@ def register_client(as_base):
     body = {
         "client_name": CLIENT_NAME,
         "redirect_uris": [REDIRECT_URI],
-        "grant_types": ["authorization_code", "refresh_token"],
+        "grant_types": ["authorization_code"],
         "response_types": ["code"],
         "token_endpoint_auth_method": "none",
         "scope": SCOPES,
@@ -162,15 +162,12 @@ def exchange_code(as_base, client_id, code, verifier):
     return resp
 
 
-def save_token(token_resp, client_id=None):
+def save_token(token_resp):
     data = {
         "access_token": token_resp.get("access_token"),
-        "refresh_token": token_resp.get("refresh_token"),
         "expires_at": int(time.time()) + int(token_resp.get("expires_in", 3600)),
         "scope": token_resp.get("scope", SCOPES),
     }
-    if client_id:
-        data["client_id"] = client_id
     with open(TOKEN_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     os.chmod(TOKEN_FILE, 0o600)
@@ -203,46 +200,14 @@ def do_login(as_base):
     code = captured["code"]
 
     token_resp = exchange_code(as_base, client_id, code, verifier)
-    data = save_token(token_resp, client_id=client_id)
-    has_refresh = bool(data["refresh_token"])
+    data = save_token(token_resp)
     print(f"# Token saved to {TOKEN_FILE}", file=sys.stderr)
-    if not has_refresh:
-        print(
-            "# NOTE: no refresh_token returned. When this token expires, re-run "
-            "`oauth_login.py login`.",
-            file=sys.stderr,
-        )
+    print(
+        "# NOTE: dida365 does not issue refresh tokens. When this token expires, "
+        "re-run `oauth_login.py login`.",
+        file=sys.stderr,
+    )
     print("Authorization: Bearer " + data["access_token"])
-
-
-def do_refresh(as_base):
-    if not os.path.exists(TOKEN_FILE):
-        sys.stderr.write(f"No {TOKEN_FILE} — run `oauth_login.py login` first.\n")
-        sys.exit(1)
-    with open(TOKEN_FILE, encoding="utf-8") as f:
-        data = json.load(f)
-    if not data.get("refresh_token"):
-        sys.stderr.write(
-            "No refresh_token on file (server may not issue one). "
-            "Re-run `oauth_login.py login`.\n"
-        )
-        sys.exit(1)
-    body = {
-        "grant_type": "refresh_token",
-        "refresh_token": data["refresh_token"],
-        "client_id": data.get("client_id", ""),
-        "scope": SCOPES,
-    }
-    status, resp = http_json("POST", as_base + TOKEN_PATH, body=body, form=True)
-    if status != 200 or not isinstance(resp, dict) or "access_token" not in resp:
-        sys.stderr.write(f"Refresh failed ({status}): {resp}\n")
-        sys.stderr.write("Re-run `oauth_login.py login` to start a fresh session.\n")
-        sys.exit(1)
-    # Some ASes rotate the refresh_token on use; keep whichever is returned.
-    resp.setdefault("refresh_token", data["refresh_token"])
-    resp.setdefault("client_id", data.get("client_id", ""))
-    updated = save_token(resp, client_id=data.get("client_id"))
-    print("Authorization: Bearer " + updated["access_token"])
 
 
 def main():
@@ -250,10 +215,12 @@ def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "login"
     if cmd in ("login", "--login", "-l"):
         do_login(as_base)
-    elif cmd in ("refresh", "--refresh", "-r"):
-        do_refresh(as_base)
     else:
-        sys.stderr.write(f"Unknown command: {cmd}\nUsage: oauth_login.py [login|refresh]\n")
+        sys.stderr.write(
+            f"Unknown command: {cmd}\n"
+            "Usage: oauth_login.py login   (refresh is not supported — dida365 "
+            "issues no refresh_token; re-run `login` when the token expires)\n"
+        )
         sys.exit(2)
 
 

@@ -41,7 +41,7 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
 2. Tell the user to register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` in Hermes's MCP config, using the printed token as a Bearer header. If `dida365` is already registered, update its headers instead. Give them the exact values to paste: server name `dida365`, URL `https://mcp.dida365.com`, transport Streamable HTTP, header `Authorization: Bearer <PRINTED_TOKEN>`. (This skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies.)
 3. Once the user confirms the server is connected, retry the original task operation.
 
-**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. Renew it: `python scripts/oauth_login.py refresh`, then tell the user to update the Bearer header in Hermes's config with the new printed token. If refresh exits non-zero, re-run `oauth_login.py login` to open the browser again.
+**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. dida365 does NOT support refresh tokens (re-login is the only renewal path), so re-run `python scripts/oauth_login.py login` to open the browser again, then tell the user to update the Bearer header in Hermes's config with the new printed token.
 
 **Bearer Token alternative** (long-lived, no browser): instead of the OAuth script, the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and use it directly as the Bearer header value in step 2. The token must come from the user — never invent one.
 

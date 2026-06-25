@@ -42,7 +42,7 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
    ```
 3. Once the user confirms the server is connected, retry the original task operation.
 
-**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. Renew it: `python scripts/oauth_login.py refresh`, then tell the user to update the Bearer token in OpenClaw's config with the new printed value. If refresh exits non-zero, re-run `oauth_login.py login` to open the browser again.
+**Token expiry.** If a later call fails with 401 / "Needs authentication", the access token expired. dida365 does NOT support refresh tokens (re-login is the only renewal path), so re-run `python scripts/oauth_login.py login` to open the browser again, then tell the user to update the Bearer token in OpenClaw's config with the new printed value.
 
 **Bearer Token alternative** (long-lived, no browser): instead of the OAuth script, the user can create an API 口令 in 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 and paste it directly as the Bearer value in the snippet above. The token must come from the user — never invent one.
 
