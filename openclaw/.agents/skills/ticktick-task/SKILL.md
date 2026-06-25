@@ -21,9 +21,9 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
 
 **Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
 
-**Onboarding — guide the user through this:**
+**Onboarding — guide the user through this immediately when tools are missing:**
 
-1. Add the `dida365` HTTP MCP server to OpenClaw's MCP config:
+1. Tell the user to add the `dida365` HTTP MCP server to OpenClaw's MCP config, and give them the exact snippet to paste:
    ```json
    {
      "mcpServers": {
@@ -33,10 +33,10 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
      }
    }
    ```
-2. Complete OAuth login in the browser when prompted. (The agent cannot complete OAuth itself.)
-3. Retry the task operation once the user confirms the server is connected.
+2. **Hand off to the user** for OAuth: instruct them to complete the browser login when OpenClaw prompts. (The agent cannot complete OAuth itself.)
+3. Once the user confirms the server is connected, retry the original task operation.
 
-**Bearer Token alternative** (if OAuth is unavailable): add a `headers` field with the user's token — never invent one:
+**Bearer Token alternative** (skips OAuth entirely — fully automatable once the user supplies a token): add a `headers` field with the user's token — never invent one:
 ```json
 {
   "mcpServers": {

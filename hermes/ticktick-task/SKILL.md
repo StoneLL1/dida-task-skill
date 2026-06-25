@@ -32,13 +32,13 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote Streamabl
 
 **Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
 
-**Onboarding — guide the user through this (Hermes has no `add` CLI, so registration is done in Hermes's MCP config):**
+**Onboarding — guide the user through this immediately when tools are missing (Hermes has no `add` CLI, so registration is done in Hermes's MCP config):**
 
-1. Register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` through Hermes's MCP server configuration (the runtime manages `mcp_servers`; this skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies).
-2. Complete OAuth login in the browser when prompted. (The agent cannot complete OAuth itself.)
-3. Retry the task operation once the user confirms the server is connected.
+1. Register `https://mcp.dida365.com` as a Streamable HTTP MCP server named `dida365` through Hermes's MCP server configuration (the runtime manages `mcp_servers`; this skill's frontmatter declares the `ticktick` dependency, which the `dida365` endpoint satisfies). Give the user the exact endpoint and server name so they can paste it into Hermes's config UI/file.
+2. **Hand off to the user** for OAuth: instruct them to complete the browser login when Hermes prompts. (The agent cannot complete OAuth itself.)
+3. Once the user confirms the server is connected, retry the original task operation.
 
-**Bearer Token alternative** (if OAuth is unavailable): register the server with an `Authorization: Bearer YOUR_TOKEN_HERE` header. The token must come from the user — never invent one. Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
+**Bearer Token alternative** (skips OAuth entirely — the user only pastes a token once): register the server with an `Authorization: Bearer YOUR_TOKEN_HERE` header. The token must come from the user — never invent one. Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
 
 Official guide: https://help.dida365.com/articles/7438132116019216384
 

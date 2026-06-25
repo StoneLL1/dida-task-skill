@@ -16,16 +16,16 @@ This skill drives the **TickTick (滴答清单) MCP server**, a remote service a
 
 **Guardrail — check before acting.** Before the first task operation, confirm the `mcp_ticktick_*` tools are available. If they are missing, or a call fails with a "tool not found" / "MCP not connected" error, **stop and run the onboarding below** — never fabricate task data, never silently skip.
 
-**Onboarding (offer to do this for the user):**
+**Onboarding — do this automatically:**
 
-1. Tell the user the TickTick MCP needs to be registered once, then ask for confirmation before running:
+1. Run the registration command directly (do not ask first — it only adds a local config entry):
    ```bash
    codex mcp add dida365 --url https://mcp.dida365.com
    ```
-2. OAuth login is prompted automatically after the command runs — instruct the user to complete it. (The agent cannot complete OAuth itself.)
-3. Retry the task operation once the user confirms the `dida365` server is connected.
+2. OAuth login is prompted automatically right after the command runs — **hand off to the user** to complete it in the browser. (The agent cannot complete OAuth itself.)
+3. Once the user confirms the `dida365` server is connected, retry the original task operation.
 
-**Bearer Token alternative** (if OAuth is unavailable): the user can set a token from 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令. The token must come from the user — never invent one.
+**Bearer Token alternative** (skips OAuth entirely — fully automatable): if the user provides a Bearer token, register with the header and no browser login is needed. The token must come from the user — never invent one. Token source: 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令.
 
 Official guide: https://help.dida365.com/articles/7438132116019216384
 
