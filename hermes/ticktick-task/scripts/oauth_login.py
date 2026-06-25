@@ -22,8 +22,10 @@ Flow:
 
 Known limitation: the dida365 authorization-server metadata advertises only
 `authorization_code` as a supported grant, yet the registration endpoint accepts
-`refresh_token` in the client grant list. This means refresh-token renewal is
-*likely* to work but is not guaranteed. If a token response lacks
+`refresh_token` in the client grant list. This script requests the `offline_access`
+scope (the standard OAuth 2.1 trigger for refresh-token issuance) to encourage the
+server to return a `refresh_token`, but whether dida365 honors it can only be
+confirmed by completing a real login. If the token response still lacks
 `refresh_token`, `refresh` exits non-zero so the caller re-runs a full login.
 """
 
@@ -45,7 +47,7 @@ AS_METADATA_URL = "https://dida365.com/.well-known/oauth-authorization-server"
 REGISTER_PATH = "/oauth/register"
 AUTHORIZE_PATH = "/oauth/authorize"
 TOKEN_PATH = "/oauth/token"
-SCOPES = "tasks:read tasks:write"
+SCOPES = "tasks:read tasks:write offline_access"
 REDIRECT_PORT = 8765
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/callback"
 CLIENT_NAME = "ticktick-skill-oauth-helper"
