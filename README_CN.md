@@ -1,0 +1,223 @@
+<div align="center">
+
+# TickTick 任务管理 Skill
+
+**跨平台 AI Agent Skill，通过 MCP 工具管理 TickTick（滴答清单）任务**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-Hermes%20%7C%20OpenClaw%20%7C%20Claude%20Code%20%7C%20Codex-green.svg)](#安装)
+[![MCP](https://img.shields.io/badge/协议-MCP-blueviolet.svg)](#前置要求)
+
+[English](README.md) · 中文文档
+
+</div>
+
+---
+
+滴答清单很擅长记录任务，而这个 Skill 赋予你的 AI Agent 用好它的「纪律」——把零散的自然语言输入，干净地解析成去重、日期正确、优先级合理的任务，并支持四大主流 Agent 运行时。
+
+## 功能特性
+
+**捕获**
+- **自然语言建任务** — 中英文日期解析（`明天`、`下周三`、`5/20`、`5月20号23:59`），输出 ISO 8601 带时区格式
+- **通知转任务** — 转发任意通知/公告文本，自动提取事件、时间、地点与链接，生成结构化任务（摘要 + 保留原文）
+- **批量创建** — 3 个以上任务用 `batch_create_tasks` 一次搞定
+
+**质量护栏**
+- **自动去重** — 创建前一律 `search_tasks`；若已存在相同任务则跳过创建
+- **不臆造日期** — 用户没提日期就留空，绝不乱猜
+- **智能优先级** — 按截止日期远近自动分配 `0/1/3/5`（今天/明天=高，3–7 天=中，>7 天=低）
+
+**路由与操作**
+- **动态项目路由** — 不硬编码项目 ID；首次使用时自动发现项目并存入本地 `config.json`
+- **完整生命周期** — 创建、查询、更新、完成、删除，统一的工具接口
+
+## 工作原理
+
+```
+"提醒我明天下午3点开会"
+  → 解析：   title="开会", due_date=2026-06-25T15:00:00+0800, priority=5
+  → 路由：   从 config.json 解析项目（默认 Inbox）
+  → 去重：   search_tasks("开会") → 无重复
+  → 创建：   mcp_ticktick_create_task(...)
+  → 确认：   "已添加到滴答清单：开会 | 截止: 明天 15:00 | 优先级: 高"
+```
+
+## 前置要求
+
+- 已为你的 AI Agent 连接 **TickTick MCP Server**，提供 `mcp_ticktick_*` 工具。参见下文[连接 MCP Server](#连接-ticktick-mcp-server)——这是一次性的远程注册，无需本地安装包。
+
+## 连接 TickTick MCP Server
+
+TickTick MCP Server 是一个**远程 Streamable HTTP 服务**，地址 `https://mcp.dida365.com`（服务名 `dida365`）。在你的 Agent 运行时里注册一次即可；授权用 **OAuth**（浏览器，推荐）或 **Bearer Token**。
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+```bash
+claude mcp add --transport http dida365 https://mcp.dida365.com
+```
+然后在会话中运行 `/mcp`，在浏览器完成 OAuth 授权。
+
+Bearer Token 方式：
+```bash
+claude mcp add --transport http dida365 https://mcp.dida365.com --header "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+</details>
+
+<details>
+<summary><b>OpenAI Codex</b></summary>
+
+```bash
+codex mcp add dida365 --url https://mcp.dida365.com
+```
+命令执行后会自动提示完成 OAuth 登录。
+
+</details>
+
+<details>
+<summary><b>Cursor / VS Code / TRAE / WorkBuddy</b>（JSON 配置）</summary>
+
+Cursor — 编辑 `.cursor/mcp.json`：
+```json
+{
+  "mcpServers": {
+    "dida365": { "url": "https://mcp.dida365.com" }
+  }
+}
+```
+VS Code — 编辑 `.vscode/mcp.json`：
+```json
+{
+  "servers": {
+    "dida365": { "type": "http", "url": "https://mcp.dida365.com" }
+  }
+}
+```
+保存后连接 `dida365`，在浏览器完成 OAuth 授权。
+
+</details>
+
+<details>
+<summary><b>Claude Desktop / ChatGPT</b>（界面连接器）</summary>
+
+- **Claude Desktop**：Customize → Connectors → Add Connector → 填 URL `https://mcp.dida365.com` → Connect → OAuth。
+- **ChatGPT**：设置 → 应用 → 高级设置 → 开启开发人员模式 → 创建应用 → 填 URL `https://mcp.dida365.com` → OAuth。
+
+</details>
+
+**鉴权说明**
+- OAuth（浏览器）为默认推荐方式。
+- Bearer Token 备选：在 滴答清单 web → 头像 → 设置 → 账户与安全 → API 口令 创建。
+- 完整指南：https://help.dida365.com/articles/7438132116019216384
+
+> 想用命令行而非 MCP？`dida-cli`（`npm i -g @suibiji/dida-cli`）是独立的命令行工具，用于管理滴答清单任务——是 MCP 之外的备选方案，本 Skill 不依赖它。详见 https://www.npmjs.com/package/@suibiji/dida-cli。
+
+预期工具接口见 [`references/ticktick-mcp-tools-reference.md`](hermes/ticktick-task/references/ticktick-mcp-tools-reference.md)。
+
+## 安装
+
+每个平台文件夹都是**自包含**的——整个复制即可使用。选择你的运行时：
+
+<details>
+<summary><b>Hermes Agent</b></summary>
+
+```bash
+cp -r hermes/ticktick-task ~/.hermes/skills/productivity/
+```
+
+</details>
+
+<details>
+<summary><b>OpenClaw</b></summary>
+
+```bash
+# 方式 A：把整个 .agents 目录复制进项目
+cp -r openclaw/.agents /path/to/project/
+
+# 方式 B：只复制 skill
+cp -r openclaw/.agents/skills/ticktick-task /path/to/project/.agents/skills/
+```
+
+</details>
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+```bash
+# 全局（所有项目生效）
+cp -r claude-code/.claude ~/.claude/
+
+# 项目级
+cp -r claude-code/.claude /path/to/your/project/.claude/
+```
+
+</details>
+
+<details>
+<summary><b>OpenAI Codex</b></summary>
+
+```bash
+# 追加到已有 AGENTS.md
+cat codex/codex.md >> /path/to/your/project/AGENTS.md
+
+# 或作为独立文件
+cp codex/codex.md /path/to/your/project/codex.md
+```
+
+</details>
+
+## 快速开始
+
+安装完成后，试试这些指令：
+
+| 你说 | 发生了什么 |
+|------|-----------|
+| `帮我创建一个任务：周五前提交报告` | 创建任务，截止到周五 |
+| `提醒我明天下午3点开会` | 创建任务，截止明天 15:00，优先级高 |
+| `把这段通知加到滴答清单` + 粘贴文本 | 通知被解析为结构化任务 |
+| `我有什么待办？` | 显示高优先级与近期待办 |
+| `完成 XXX 任务` | 搜索并完成匹配的任务 |
+
+## 配置说明
+
+Skill 把项目映射存在本地 `config.json`。首次使用时调用 `get_projects()` 列出项目，让你选择默认项目。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `default_project` | string | `"Inbox"` | Agent 创建任务的默认项目 |
+| `projects` | object | `{}` | 名称 → ID 映射（首次使用时自动填充） |
+| `timezone` | string | `"Asia/Shanghai"` | 日期计算的时区 |
+
+各平台都附带可直接编辑的 `config.example.json` 模板。
+
+## 目录结构
+
+```
+ticktick-task-publish/
+├── README.md                                # English
+├── README_CN.md                             # 本文件
+├── hermes/                                  # Hermes Agent
+│   └── ticktick-task/
+│       ├── SKILL.md                         # Skill 定义（YAML frontmatter + 正文）
+│       ├── config.example.json
+│       └── references/ticktick-mcp-tools-reference.md
+├── openclaw/                                # OpenClaw / CLAWHUB
+│   └── .agents/skills/ticktick-task/
+│       ├── SKILL.md
+│       ├── config.example.json
+│       └── references/ticktick-mcp-tools-reference.md
+├── claude-code/                             # Claude Code
+│   ├── .claude/skills/ticktick-task.md      # Skill 指令
+│   ├── scripts/config.example.json
+│   └── references/ticktick-mcp-tools-reference.md
+└── codex/                                   # OpenAI Codex
+    ├── codex.md                             # AGENTS.md 风格指令
+    ├── scripts/config.example.json
+    └── references/ticktick-mcp-tools-reference.md
+```
+
+## 许可证
+
+[MIT](LICENSE)
