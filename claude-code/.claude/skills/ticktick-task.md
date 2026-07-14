@@ -1,3 +1,11 @@
+---
+name: ticktick-task
+description: |
+  滴答清单（TickTick）任务管理。当用户要求创建/添加/查询/完成/更新/删除滴答清单任务、
+  转发通知文本转为任务、问"我有什么待办""今天到期什么"、或说"提醒我…""帮我记一下…"
+  时使用。通过 dida365 MCP 工具自动去重、中英文日期解析、按截止日智能分配优先级。
+---
+
 <!-- TickTick Task Management Skill for Claude Code -->
 
 # TickTick Task Management
