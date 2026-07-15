@@ -1,0 +1,12 @@
+display_name: Claude Code
+output_root: claude-code
+skill_relpath: .claude/skills/ticktick-task.md
+references_relpath: references
+scripts_relpath: scripts
+templates_relpath: scripts/templates
+commands_relpath: .claude/commands
+emits_slash_commands: true
+has_frontmatter: true
+has_tail: false
+open_html_step: |-
+  写到临时 HTML（如 `%TEMP%\ticktick-kanban.html`），`explorer.exe "<路径>"` 或 `cmd /c start "" "<路径>"` 调默认浏览器。

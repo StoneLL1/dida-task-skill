@@ -1,0 +1,11 @@
+display_name: Codex
+output_root: codex
+skill_relpath: codex.md
+references_relpath: references
+scripts_relpath: scripts
+templates_relpath: scripts/templates
+emits_slash_commands: false
+has_frontmatter: false
+has_tail: true
+open_html_step: |-
+  写到临时 HTML 文件，用默认浏览器打开（macOS `open`、Windows `start`、Linux `xdg-open`）。

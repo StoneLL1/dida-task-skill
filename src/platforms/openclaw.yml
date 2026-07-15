@@ -1,0 +1,11 @@
+display_name: OpenClaw
+output_root: openclaw
+skill_relpath: .agents/skills/ticktick-task/SKILL.md
+references_relpath: .agents/skills/ticktick-task/references
+scripts_relpath: .agents/skills/ticktick-task/scripts
+templates_relpath: .agents/skills/ticktick-task/scripts/templates
+emits_slash_commands: false
+has_frontmatter: true
+has_tail: true
+open_html_step: |-
+  写到临时 HTML 文件，用默认浏览器打开（macOS `open`、Windows `start`、Linux `xdg-open`）。
