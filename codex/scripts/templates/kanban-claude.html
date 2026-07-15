@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>日程看板 · Schedule</title>
+<style>
+/* ============================================================
+   Claude (Anthropic) design system tokens — pasted verbatim,
+   with CJK fallbacks appended to the font stacks so Chinese
+   headlines fall through to an editorial serif (思源宋体/Songti).
+   ============================================================ */
+:root {
+  --bg: #f5f4ed;
+  --surface: #faf9f5;
+  --surface-warm: #e8e6dc;
+  --fg: #141413;
+  --fg-2: #3d3d3a;
+  --muted: #5e5d59;
+  --meta: #87867f;
+  --border: #f0eee6;
+  --border-soft: #e8e6dc;
+  --accent: #c96442;
+  --accent-on: #faf9f5;
+  --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+  --success: #17a34a;
+  --warn: #eab308;
+  --danger: #b53333;
+  --font-display: "Anthropic Serif", Georgia, "Source Han Serif SC", "Noto Serif SC", "Songti SC", serif;
+  --font-body: "Anthropic Sans", Arial, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+  --font-mono: "Anthropic Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --text-xs: 10px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 25px;
+  --text-2xl: 32px;
+  --leading-body: 1.6;
+  --leading-tight: 1.1;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: rgba(0,0,0,0.05) 0px 4px 24px;
+  --focus-ring: 0 0 0 3px rgba(56,152,236,0.3);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+input { font-family: inherit; }
+::selection { background: color-mix(in oklab, var(--accent), white 55%); }
+
+/* ---------- App shell ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  grid-template-rows: 64px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "sidebar workspace";
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 5;
+}
+.brand { display: flex; align-items: baseline; gap: var(--space-3); }
+.brand .mark {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-xl);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.brand .sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+.topbar .search {
+  flex: 1;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--meta);
+  transition: border-color var(--motion-fast, 150ms);
+}
+.topbar .search:focus-within { border-color: var(--border-soft); box-shadow: var(--focus-ring); }
+.topbar .search input {
+  flex: 1; border: 0; background: none; outline: none;
+  font-size: var(--text-sm); color: var(--fg);
+}
+.topbar .search input::placeholder { color: var(--meta); }
+.date-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 8px 14px;
+  background: var(--surface-warm);
+  color: var(--fg-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.date-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fg-2); }
+.topbar .spacer { flex: 1; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-warm); color: var(--fg-2);
+  font-family: var(--font-display); font-weight: 500; font-size: 15px;
+  box-shadow: var(--elev-ring);
+}
+
+/* ---------- Primary CTA (one of two accent moments) ---------- */
+.btn-accent {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px;
+  background: var(--accent);
+  color: var(--accent-on);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  box-shadow: 0 0 0 1px var(--accent);
+  transition: background 150ms;
+}
+.btn-accent:hover { background: var(--accent-hover); }
+.btn-accent .plus { font-size: 18px; line-height: 1; }
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-6) var(--space-4);
+  overflow-y: auto;
+}
+.side-block { margin-bottom: var(--space-8); }
+.side-h {
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--meta);
+  font-weight: 500;
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-2);
+}
+/* mini calendar */
+.minical-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-2);
+}
+.minical-head .month {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--text-base); color: var(--fg);
+}
+.minical-head .nav { color: var(--meta); font-size: 13px; display: flex; gap: var(--space-3); }
+.minical {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  font-family: var(--font-mono);
+}
+.minical .wk {
+  text-align: center; font-size: 9px; color: var(--meta);
+  letter-spacing: 0.1em; padding-bottom: 4px;
+}
+.minical .d {
+  aspect-ratio: 1;
+  display: grid; place-items: center;
+  font-size: 12px; color: var(--fg-2);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.minical .d:hover { background: var(--surface-warm); }
+.minical .d.dim { color: var(--meta); opacity: 0.5; }
+.minical .d.has { font-weight: 600; }
+.minical .d.has::after {
+  content: ""; position: relative; top: 9px;
+  width: 3px; height: 3px; border-radius: 50%;
+  background: var(--fg-2);
+}
+.minical .d.today {
+  background: var(--fg); color: var(--surface); font-weight: 600;
+}
+.minical .d.today::after { background: var(--surface); }
+
+/* stats */
+.stat-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: var(--space-3) var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.stat-row:first-of-type { border-top: 0; }
+.stat-row .lbl { font-size: var(--text-sm); color: var(--muted); }
+.stat-row .num {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--text-lg); color: var(--fg);
+}
+.stat-row .num.done { color: var(--success); }
+
+/* tag list */
+.tag {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 7px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background 120ms;
+}
+.tag:hover { background: var(--bg); }
+.tag .swatch { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.tag .count { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--meta); }
+.sw-work { background: var(--fg-2); }
+.sw-health { background: var(--success); }
+.sw-learn { background: var(--warn); }
+.sw-personal { background: var(--danger); }
+
+/* ---------- Workspace ---------- */
+.workspace {
+  grid-area: workspace;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+.workspace-inner {
+  display: flex; flex-direction: column; gap: var(--space-5);
+  max-width: 1500px;
+}
+
+/* section header */
+.sec-head {
+  display: flex; align-items: center; gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.sec-head .eyebrow {
+  font-size: var(--text-xs); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--meta); font-weight: 500;
+}
+.sec-head .title {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--text-xl); color: var(--fg); line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+}
+.sec-head .grow { flex: 1; }
+
+/* card primitive */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-raised);
+}
+
+/* ---------- Today's focus strip ---------- */
+.focus-strip { padding: var(--space-5) var(--space-5) var(--space-6); }
+.focus-strip .sec-head { margin-bottom: var(--space-4); }
+.focus-add {
+  display: none;
+  align-items: center; gap: var(--space-3);
+  padding: 10px 14px; margin-bottom: var(--space-4);
+  background: var(--bg);
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-md);
+}
+.focus-add.open { display: flex; }
+.focus-add input {
+  flex: 1; border: 0; background: none; outline: none;
+  font-size: var(--text-sm); color: var(--fg);
+}
+.focus-add input::placeholder { color: var(--meta); }
+.focus-add .hint { font-size: var(--text-xs); color: var(--meta); font-family: var(--font-mono); }
+
+.focus-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+.focus-card {
+  position: relative;
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  min-height: 124px;
+  transition: box-shadow 150ms, transform 150ms;
+}
+.focus-card:hover { box-shadow: var(--elev-raised); }
+.focus-card.top {
+  background: linear-gradient(180deg, var(--surface), var(--surface));
+  border-color: var(--border-soft);
+}
+.fc-top { display: flex; align-items: center; gap: var(--space-2); }
+.fc-tag {
+  font-size: var(--text-xs); letter-spacing: 0.06em;
+  color: var(--fg); font-weight: 500;
+  padding: 3px 8px; background: var(--surface-warm);
+  border-radius: var(--radius-pill);
+}
+.fc-time { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--meta); }
+.fc-title {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--text-base); line-height: 1.35; color: var(--fg);
+}
+.fc-meta { display: flex; align-items: center; gap: var(--space-2); margin-top: auto; }
+.fc-meta .cat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.fc-meta .cat .dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* checkbox */
+.check {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--border-soft);
+  display: grid; place-items: center;
+  flex: none; cursor: pointer;
+  transition: background 150ms, border-color 150ms;
+  background: var(--surface);
+}
+.check:hover { border-color: var(--meta); }
+.check::after {
+  content: ""; width: 10px; height: 6px;
+  border-left: 2px solid var(--surface);
+  border-bottom: 2px solid var(--surface);
+  transform: rotate(-45deg) scale(0);
+  transition: transform 120ms;
+  margin-top: -2px;
+}
+.task.done .check { background: var(--fg); border-color: var(--fg); }
+.task.done .check::after { transform: rotate(-45deg) scale(1); }
+.task.done .fc-title,
+.task.done .m-card-title { color: var(--meta); text-decoration: line-through; }
+
+/* ---------- Main grid: timeline + matrix ---------- */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1.32fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+.panel { padding: var(--space-5); }
+
+/* timeline toggle */
+.seg {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+.seg button {
+  padding: 5px 14px; border-radius: var(--radius-pill);
+  font-size: var(--text-sm); color: var(--muted);
+  font-weight: 500;
+  transition: background 150ms, color 150ms;
+}
+.seg button.on { background: var(--fg); color: var(--surface); }
+
+/* timeline body — day */
+.timeline-body { position: relative; }
+/* Show/hide via :not(.on) so we never clobber each view's own display
+   value (day view needs display:grid, week view stays block). The earlier
+   `.tl-view.on { display:block }` overrode `.tl-day-view { display:grid }`
+   by specificity and stacked the gutter above the track. */
+.tl-view:not(.on) { display: none; }
+
+.tl-day-view {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  margin-top: var(--space-3);
+}
+.tl-gutter {
+  display: flex; flex-direction: column;
+  font-family: var(--font-mono);
+  font-size: 11px; color: var(--meta);
+}
+.tl-gutter span {
+  height: 44px;
+  display: flex; align-items: flex-start; justify-content: flex-end;
+  padding-right: var(--space-3); padding-top: 3px;
+  line-height: 1;
+}
+.tl-track {
+  position: relative;
+  height: 572px; /* 13h × 44px, 08:00→21:00 */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 43px, var(--border) 43px 44px
+  );
+  border-left: 1px solid var(--border);
+}
+.tl-task {
+  position: absolute;
+  left: 8px; right: 8px;
+  top: var(--top); height: var(--h);
+  padding: 7px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cat, var(--border-soft));
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 150ms;
+}
+.tl-task:hover { box-shadow: var(--elev-raised); }
+.tl-task .t-time { font-family: var(--font-mono); font-size: 10px; color: var(--meta); letter-spacing: 0.04em; }
+.tl-task .t-title { font-size: 13px; color: var(--fg); font-weight: 500; line-height: 1.3; }
+.tl-task.short { padding: 4px 10px; }
+.tl-task.short .t-title { font-size: 12px; }
+
+/* now line — the second accent moment */
+.tl-now {
+  position: absolute; left: -4px; right: 0;
+  top: var(--top);
+  height: 0;
+  border-top: 1.5px solid var(--accent);
+  z-index: 4;
+  pointer-events: none;
+}
+.tl-now::before {
+  content: ""; position: absolute; left: -2px; top: -5px;
+  width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+}
+.tl-now span {
+  position: absolute; right: 0; top: -18px;
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--accent); background: var(--bg);
+  padding: 1px 6px; border-radius: var(--radius-pill);
+  letter-spacing: 0.04em;
+}
+
+/* timeline body — week */
+.tl-week-view { margin-top: var(--space-3); }
+.wk-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-2);
+}
+.wk-day {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 360px;
+  display: flex; flex-direction: column;
+}
+.wk-day.today { background: var(--surface); border-color: var(--border-soft); }
+.wk-head {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.wk-head .wname { font-size: 10px; letter-spacing: 0.1em; color: var(--meta); text-transform: uppercase; }
+.wk-head .wnum { font-family: var(--font-display); font-size: var(--text-base); color: var(--fg); font-weight: 500; }
+.wk-day.today .wk-head .wnum {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 26px; padding: 0 7px;
+  background: var(--fg); color: var(--surface);
+  border-radius: var(--radius-pill); margin-top: 3px;
+}
+.wk-tasks { padding: var(--space-2); display: flex; flex-direction: column; gap: 4px; }
+.wk-chip {
+  padding: 4px 7px;
+  background: var(--surface);
+  border-left: 2px solid var(--cat, var(--border-soft));
+  border-radius: 4px;
+  font-size: 11px; color: var(--fg-2); line-height: 1.3;
+}
+.wk-chip .c-t { font-family: var(--font-mono); font-size: 9px; color: var(--meta); display: block; }
+
+/* ---------- Eisenhower matrix ---------- */
+.matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-3);
+  position: relative;
+}
+.matrix-grid::before,
+.matrix-grid::after {
+  position: absolute; font-family: var(--font-display);
+  font-size: 11px; color: var(--meta); letter-spacing: 0.04em;
+  pointer-events: none;
+}
+/* axis labels */
+.mx-y { writing-mode: vertical-rl; transform: rotate(180deg); }
+.axis-label {
+  font-size: var(--text-xs); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--meta); font-weight: 500;
+  text-align: center; padding: var(--space-2) 0;
+}
+
+.quad {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  min-height: 168px;
+  display: flex; flex-direction: column;
+  transition: background 150ms, border-color 150ms, box-shadow 150ms;
+}
+.quad.drop { background: var(--surface-warm); border-color: var(--border-soft); box-shadow: var(--elev-ring); }
+.quad-head {
+  display: flex; align-items: baseline; gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.quad-head .qname {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: var(--text-sm); color: var(--fg);
+}
+.quad-head .qact {
+  font-size: 10px; letter-spacing: 0.08em;
+  color: var(--meta); margin-left: auto;
+  padding: 2px 7px; border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+.quad-list { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.m-card {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  transition: box-shadow 150ms, opacity 150ms;
+}
+.m-card:hover { box-shadow: var(--elev-raised); }
+.m-card:active { cursor: grabbing; }
+.m-card.dragging { opacity: 0.4; }
+.m-card-title { font-size: 13px; color: var(--fg); line-height: 1.35; }
+.m-card .grip { color: var(--meta); font-size: 13px; line-height: 1.3; flex: none; margin-top: 1px; }
+
+/* quadrant hint tints via accent dots on qact — keep palette disciplined */
+.quad[data-q="1"] .qact { color: var(--fg); }
+.quad[data-q="2"] .qact { color: var(--success); }
+.quad[data-q="3"] .qact { color: var(--warn); }
+.quad[data-q="4"] .qact { color: var(--meta); }
+
+/* ---------- responsive collapse ---------- */
+@media (max-width: 1180px) {
+  .focus-row { grid-template-columns: repeat(2, 1fr); }
+  .main-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 880px) {
+  .app { grid-template-columns: 1fr; grid-template-areas: "topbar" "workspace"; }
+  .sidebar { display: none; }
+  .focus-row { grid-template-columns: 1fr; }
+  .topbar .search { display: none; }
+}
+
+/* === injected === */
+
+/* Preview banner — sits above .app; make body a flex column so .app fills remaining height */
+body { display: flex; flex-direction: column; }
+.app { flex: 1; min-height: 0; height: auto; }
+
+.preview-banner {
+  flex: none;
+  background: var(--surface-warm);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 6px var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--fg-2);
+  text-align: center;
+  letter-spacing: 0.04em;
+  font-family: var(--font-mono);
+  line-height: 1.6;
+}
+.preview-banner .warn { color: var(--accent); margin-right: 6px; font-weight: 600; }
+
+/* All-day band (day view) — full-width grid child above gutter+track */
+.tl-allday-band {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 0 var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.tl-allday-band:empty { display: none; }
+.tl-allday-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cat, var(--border-soft));
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--fg-2);
+  line-height: 1.3;
+}
+.tl-allday-chip .al-day { font-family: var(--font-mono); font-size: 9px; color: var(--meta); }
+
+/* Empty-state messages */
+.empty-note {
+  color: var(--meta);
+  font-size: 12px;
+  text-align: center;
+  padding: var(--space-3);
+}
+.whole-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh;
+  color: var(--meta);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- Preview banner -->
+<div class="preview-banner">
+  <span class="warn">⚠</span>本地预览 · 不同步滴答清单，改动请回对话同步
+</div>
+
+<div class="app">
+
+  <!-- ===================== TOP BAR ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">日程</span>
+      <span class="sub">Schedule</span>
+    </div>
+
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" placeholder="搜索任务、项目或标签…" />
+    </label>
+
+    <div class="spacer"></div>
+
+    <div class="date-chip" id="dateChip">
+      <span class="dot"></span>
+      <span id="dateChipText">—</span>
+    </div>
+
+    <button class="btn-accent" id="newTaskBtn">
+      <span class="plus">+</span> 新建任务
+    </button>
+
+    <div class="avatar" title="个人工作区">A</div>
+  </header>
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+
+    <div class="side-block">
+      <div class="minical-head">
+        <span class="month" id="minicalMonth">—</span>
+        <span class="nav"><span>‹</span><span>›</span></span>
+      </div>
+      <div class="minical" id="minical">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-h">本周概览</div>
+      <div id="statsBlock">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <div class="side-block">
+      <div class="side-h">分类</div>
+      <div id="catList">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== WORKSPACE ===================== -->
+  <main class="workspace">
+    <div class="workspace-inner" id="workspaceInner">
+
+      <!-- -------- Today's focus strip -------- -->
+      <section class="card focus-strip">
+        <div class="sec-head">
+          <span class="eyebrow">Today</span>
+          <h2 class="title">今日焦点</h2>
+          <span class="grow"></span>
+          <span class="seg"><button class="on">全部</button><button>进行中</button></span>
+        </div>
+
+        <div class="focus-add" id="focusAdd">
+          <span style="color:var(--accent);font-size:16px;">+</span>
+          <input type="text" id="focusInput" placeholder="添加一件今日最重要的事，回车确认…" />
+          <span class="hint">Enter ↵</span>
+        </div>
+
+        <div class="focus-row" id="focusRow">
+          <!-- rendered by JS -->
+        </div>
+      </section>
+
+      <!-- -------- Main grid: timeline + matrix -------- -->
+      <div class="main-grid">
+
+        <!-- TIMELINE -->
+        <section class="card panel">
+          <div class="sec-head">
+            <span class="eyebrow">Schedule</span>
+            <h2 class="title">时间轴</h2>
+            <span class="grow"></span>
+            <span class="seg" id="tlToggle">
+              <button class="on" data-view="day">日</button>
+              <button data-view="week">周</button>
+            </span>
+          </div>
+
+          <div class="timeline-body">
+
+            <!-- DAY VIEW -->
+            <div class="tl-view tl-day-view on" data-tl="day">
+              <div class="tl-allday-band" id="tlDayAllDay"><!-- all-day chips --></div>
+              <div class="tl-gutter">
+                <span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span>
+                <span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span>
+                <span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span>
+                <span>20:00</span>
+              </div>
+              <div class="tl-track" id="tlDayTrack">
+                <!-- events + now line rendered by JS -->
+              </div>
+            </div>
+
+            <!-- WEEK VIEW -->
+            <div class="tl-view tl-week-view" data-tl="week">
+              <div class="axis-label" id="wkAxisLabel">本周</div>
+              <div class="wk-grid" id="wkGrid">
+                <!-- 7 day columns rendered by JS -->
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- MATRIX -->
+        <section class="card panel">
+          <div class="sec-head">
+            <span class="eyebrow">Priority</span>
+            <h2 class="title">优先级矩阵</h2>
+          </div>
+          <div style="font-size:12px;color:var(--meta);margin-bottom:var(--space-3);">拖动任务卡，在象限之间重新归类。</div>
+
+          <div class="matrix-grid">
+            <div class="axis-label">→ 紧急</div>
+            <div class="axis-label" style="visibility:hidden;">.</div>
+
+            <div class="quad" data-q="1">
+              <div class="quad-head">
+                <span class="qname">重要 · 紧急</span>
+                <span class="qact">立即做</span>
+              </div>
+              <div class="quad-list"><!-- rendered by JS --></div>
+            </div>
+
+            <div class="quad" data-q="2">
+              <div class="quad-head">
+                <span class="qname">重要 · 不紧急</span>
+                <span class="qact">计划做</span>
+              </div>
+              <div class="quad-list"><!-- rendered by JS --></div>
+            </div>
+
+            <div class="quad" data-q="3">
+              <div class="quad-head">
+                <span class="qname">不重要 · 紧急</span>
+                <span class="qact">委 托</span>
+              </div>
+              <div class="quad-list"><!-- rendered by JS --></div>
+            </div>
+
+            <div class="quad" data-q="4">
+              <div class="quad-head">
+                <span class="qname">不重要 · 不紧急</span>
+                <span class="qact">消 除</span>
+              </div>
+              <div class="quad-list"><!-- rendered by JS --></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:var(--space-2);">
+            <span class="axis-label" style="padding:0;text-align:left;">↓ 重要</span>
+            <span class="axis-label" style="padding:0;text-align:right;">不重要</span>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>const DATA = INJECT_DATA_HERE;</script>
+<script>
+(function () {
+  "use strict";
+
+  /* ============ helpers ============ */
+  function escapeHtml(s) {
+    if (s == null) return "";
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function setText(el, txt) {
+    if (el) el.textContent = txt == null ? "" : String(txt);
+  }
+  function hhToPx(hhmm, baseH, pxPerH) {
+    if (!hhmm) return null;
+    var parts = String(hhmm).split(":");
+    var h = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10) || 0;
+    return ((h + m / 60) - baseH) * pxPerH;
+  }
+
+  /* ============ render: date chip ============ */
+  function renderDateChip(DATA) {
+    var el = document.getElementById("dateChipText");
+    if (el && DATA.today) setText(el, DATA.today.label || "");
+  }
+
+  /* ============ render: mini calendar ============ */
+  function renderMinical(DATA) {
+    var cal = DATA.calendar || {};
+    var monthEl = document.getElementById("minicalMonth");
+    if (monthEl) setText(monthEl, DATA.today ? (DATA.today.monthLabel || (cal.year + " 年 " + cal.month + " 月")) : "");
+
+    var el = document.getElementById("minical");
+    if (!el) return;
+    el.innerHTML = "";
+
+    /* Weekday headers (Mon-Sun, matching original 一…日) */
+    ["一","二","三","四","五","六","日"].forEach(function (w) {
+      var s = document.createElement("span");
+      s.className = "wk";
+      s.textContent = w;
+      el.appendChild(s);
+    });
+
+    var year = cal.year, month = cal.month;
+    if (!year || !month) return;
+
+    /* JS getDay: 0=Sun … 6=Sat; convert to Mon=1 … Sun=7 */
+    var firstDate = new Date(year, month - 1, 1);
+    var jsDow = firstDate.getDay();
+    var firstDow = jsDow === 0 ? 7 : jsDow;
+    var daysInMonth = new Date(year, month, 0).getDate();
+    var daysInPrev = new Date(year, month - 1, 0).getDate();
+
+    /* Build count map: { dayNum: count } */
+    var countMap = {};
+    (cal.days || []).forEach(function (d) { countMap[d.d] = d.count; });
+
+    /* Is current month the today month? */
+    var todayY = DATA.today ? DATA.today.y : null;
+    var todayM = DATA.today ? DATA.today.m : null;
+    var isThisMonth = (todayY === year && todayM === month);
+
+    /* Leading days from previous month (dim) */
+    for (var i = firstDow - 1; i > 0; i--) {
+      var d = daysInPrev - i + 1;
+      var s = document.createElement("span");
+      s.className = "d dim";
+      s.textContent = d;
+      el.appendChild(s);
+    }
+
+    /* Current month days */
+    for (var day = 1; day <= daysInMonth; day++) {
+      var s = document.createElement("span");
+      s.className = "d";
+      if (countMap[day]) s.classList.add("has");
+      if (isThisMonth && day === cal.todayD) s.classList.add("today");
+      s.textContent = day;
+      el.appendChild(s);
+    }
+
+    /* Trailing days from next month (dim) */
+    var totalCells = (firstDow - 1) + daysInMonth;
+    var remainder = totalCells % 7;
+    var trailing = remainder === 0 ? 0 : 7 - remainder;
+    for (var t = 1; t <= trailing; t++) {
+      var s = document.createElement("span");
+      s.className = "d dim";
+      s.textContent = t;
+      el.appendChild(s);
+    }
+  }
+
+  /* ============ render: stats ============ */
+  function renderStats(DATA) {
+    var el = document.getElementById("statsBlock");
+    if (!el) return;
+    var s = DATA.stats || {};
+    el.innerHTML = "";
+
+    var rows = [
+      { lbl: "今日待办", num: s.today },
+      { lbl: "本周任务", num: s.thisWeek },
+      { lbl: "已完成",   num: s.completedToday, done: true },
+      { lbl: "过期",     num: s.overdue }
+    ];
+
+    rows.forEach(function (r) {
+      if (r.num == null) return;
+      var row = document.createElement("div");
+      row.className = "stat-row";
+      var num = document.createElement("span");
+      num.className = "num" + (r.done ? " done" : "");
+      num.textContent = r.num;
+      var lbl = document.createElement("span");
+      lbl.className = "lbl";
+      lbl.textContent = r.lbl;
+      row.appendChild(lbl);
+      row.appendChild(num);
+      el.appendChild(row);
+    });
+  }
+
+  /* ============ render: categories ============ */
+  function renderCats(DATA) {
+    var el = document.getElementById("catList");
+    if (!el) return;
+    el.innerHTML = "";
+
+    var cats = DATA.categories || [];
+    if (cats.length === 0) {
+      el.innerHTML = '<div class="empty-note">暂无</div>';
+      return;
+    }
+
+    var shown = cats.slice(0, 100);
+    shown.forEach(function (c) {
+      var tag = document.createElement("div");
+      tag.className = "tag";
+      var sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = c.color || "var(--fg-2)";
+      var name = document.createElement("span");
+      name.textContent = c.name || "";
+      var count = document.createElement("span");
+      count.className = "count";
+      count.textContent = c.count;
+      tag.appendChild(sw);
+      tag.appendChild(name);
+      tag.appendChild(count);
+      el.appendChild(tag);
+    });
+
+    if (cats.length > 100) {
+      var note = document.createElement("div");
+      note.className = "empty-note";
+      note.textContent = "显示前 100 条，共 " + cats.length + " 条";
+      el.appendChild(note);
+    }
+  }
+
+  /* ============ render: focus row ============ */
+  function renderFocus(DATA) {
+    var el = document.getElementById("focusRow");
+    if (!el) return;
+    el.innerHTML = "";
+
+    var focus = DATA.focus || [];
+    if (focus.length === 0) {
+      el.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">暂无今日焦点</div>';
+      return;
+    }
+
+    focus.slice(0, 4).forEach(function (f, i) {
+      var isTop = (i === 0 && f.priority === 5);
+      var card = document.createElement("article");
+      card.className = "focus-card task" + (isTop ? " top" : "");
+      card.setAttribute("data-id", f.id || "");
+
+      /* tag */
+      var fcTop = document.createElement("div");
+      fcTop.className = "fc-top";
+      var tag = document.createElement("span");
+      tag.className = "fc-tag";
+      if (!isTop) tag.style.background = "var(--bg)";
+      var dl = f.dueLabel || "";
+      if (/逾期/.test(dl)) tag.style.color = "var(--danger)";
+      tag.textContent = dl || "今日";
+      var time = document.createElement("span");
+      time.className = "fc-time";
+      time.textContent = f.time || "";
+      fcTop.appendChild(tag);
+      fcTop.appendChild(time);
+
+      /* title + check */
+      var bodyDiv = document.createElement("div");
+      bodyDiv.style.cssText = "display:flex;gap:var(--space-3);align-items:flex-start;";
+      var check = document.createElement("span");
+      check.className = "check";
+      check.setAttribute("data-check", "");
+      var title = document.createElement("span");
+      title.className = "fc-title";
+      title.textContent = f.title || "";
+      bodyDiv.appendChild(check);
+      bodyDiv.appendChild(title);
+
+      /* meta */
+      var meta = document.createElement("div");
+      meta.className = "fc-meta";
+      var cat = document.createElement("span");
+      cat.className = "cat";
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = f.projectColor || "var(--fg-2)";
+      cat.appendChild(dot);
+      cat.appendChild(document.createTextNode(" " + (f.project || "")));
+      meta.appendChild(cat);
+
+      card.appendChild(fcTop);
+      card.appendChild(bodyDiv);
+      card.appendChild(meta);
+
+      if (f.done) card.classList.add("done");
+      el.appendChild(card);
+    });
+  }
+
+  /* ============ render: timeline day ============ */
+  function renderTimelineDay(DATA) {
+    var track = document.getElementById("tlDayTrack");
+    if (!track) return;
+    track.innerHTML = "";
+
+    var day = (DATA.timeline && DATA.timeline.day) || {};
+    var baseH = 8, pxPerH = 44, maxPx = 572;
+
+    /* All-day band */
+    var allDayBand = document.getElementById("tlDayAllDay");
+    if (allDayBand) {
+      allDayBand.innerHTML = "";
+      (day.allDay || []).forEach(function (a) {
+        var chip = document.createElement("span");
+        chip.className = "tl-allday-chip";
+        chip.style.setProperty("--cat", a.projectColor || "var(--fg-2)");
+        var lbl = document.createElement("span");
+        lbl.className = "al-day";
+        lbl.textContent = "全天";
+        chip.appendChild(lbl);
+        chip.appendChild(document.createTextNode(" " + (a.title || "")));
+        allDayBand.appendChild(chip);
+      });
+    }
+
+    /* Events */
+    var events = day.events || [];
+    events.slice(0, 100).forEach(function (ev) {
+      var top = hhToPx(ev.start, baseH, pxPerH);
+      if (top == null) top = 0;
+      var h;
+      if (ev.end) {
+        var endPx = hhToPx(ev.end, baseH, pxPerH);
+        h = endPx - top;
+      } else {
+        h = 22; /* single-point: short block */
+      }
+      h = Math.max(22, h);
+      /* Clamp into visible range */
+      if (top < 0) { h += top; top = 0; }
+      if (top + h > maxPx) h = maxPx - top;
+      if (h < 22) h = 22;
+
+      var div = document.createElement("div");
+      div.className = "tl-task" + (h <= 22 ? " short" : "");
+      div.style.setProperty("--top", top + "px");
+      div.style.setProperty("--h", h + "px");
+      div.style.setProperty("--cat", ev.projectColor || "var(--fg-2)");
+
+      if (ev.end) {
+        var t = document.createElement("div");
+        t.className = "t-time";
+        t.textContent = ev.start + " – " + ev.end;
+        div.appendChild(t);
+      }
+      var ttl = document.createElement("div");
+      ttl.className = "t-title";
+      ttl.textContent = ev.title || "";
+      div.appendChild(ttl);
+      track.appendChild(div);
+    });
+
+    if (events.length > 100) {
+      var note = document.createElement("div");
+      note.style.cssText = "position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:10px;color:var(--meta);";
+      note.textContent = "显示前 100 条，共 " + events.length + " 条";
+      track.appendChild(note);
+    }
+
+    /* Now line by real current time */
+    var now = new Date();
+    var nowH = now.getHours() + now.getMinutes() / 60;
+    if (nowH >= 8 && nowH <= 21) {
+      var topNow = (nowH - 8) * pxPerH;
+      var nowDiv = document.createElement("div");
+      nowDiv.className = "tl-now";
+      nowDiv.style.setProperty("--top", topNow + "px");
+      var hh = String(now.getHours()).padStart(2, "0");
+      var mm = String(now.getMinutes()).padStart(2, "0");
+      var span = document.createElement("span");
+      span.textContent = "现在 " + hh + ":" + mm;
+      nowDiv.appendChild(span);
+      track.appendChild(nowDiv);
+    }
+
+    /* Empty state */
+    if (events.length === 0 && (day.allDay || []).length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty-note";
+      empty.style.cssText = "position:absolute;inset:0;display:grid;place-items:center;";
+      empty.textContent = "今日暂无时段任务";
+      track.appendChild(empty);
+    }
+  }
+
+  /* ============ render: timeline week ============ */
+  function renderTimelineWeek(DATA) {
+    var grid = document.getElementById("wkGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    var week = (DATA.timeline && DATA.timeline.week) || [];
+    var todayIso = DATA.today ? DATA.today.iso : null;
+
+    /* Axis label */
+    var axisEl = document.getElementById("wkAxisLabel");
+    if (axisEl) {
+      if (week.length > 0) {
+        var sDate = week[0].date || "";
+        var eDate = week[week.length - 1].date || "";
+        var fmt = function (iso) {
+          if (!iso) return "";
+          var p = iso.split("-");
+          return parseInt(p[1], 10) + "月" + parseInt(p[2], 10) + "日";
+        };
+        setText(axisEl, "本周 · " + fmt(sDate) + " – " + fmt(eDate));
+      } else {
+        setText(axisEl, "本周");
+      }
+    }
+
+    if (week.length === 0) {
+      grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">本周暂无任务</div>';
+      return;
+    }
+
+    week.forEach(function (day) {
+      var isToday = day.isToday || day.date === todayIso;
+      var div = document.createElement("div");
+      div.className = "wk-day" + (isToday ? " today" : "");
+
+      var dnum = "";
+      if (day.date) {
+        var p = day.date.split("-");
+        dnum = parseInt(p[2], 10);
+      }
+
+      /* head */
+      var head = document.createElement("div");
+      head.className = "wk-head";
+      var wname = document.createElement("span");
+      wname.className = "wname";
+      wname.textContent = day.dow || "";
+      var wnum = document.createElement("span");
+      wnum.className = "wnum";
+      wnum.textContent = dnum;
+      head.appendChild(wname);
+      head.appendChild(wnum);
+
+      /* tasks */
+      var tasks = document.createElement("div");
+      tasks.className = "wk-tasks";
+
+      var hasAny = false;
+
+      /* All-day chips first */
+      (day.allDay || []).forEach(function (a) {
+        hasAny = true;
+        var chip = document.createElement("div");
+        chip.className = "wk-chip";
+        chip.style.setProperty("--cat", a.projectColor || "var(--fg-2)");
+        var t = document.createElement("span");
+        t.className = "c-t";
+        t.textContent = "全天";
+        chip.appendChild(t);
+        chip.appendChild(document.createTextNode(" " + (a.title || "")));
+        tasks.appendChild(chip);
+      });
+
+      /* Timed events */
+      (day.events || []).forEach(function (ev) {
+        hasAny = true;
+        var chip = document.createElement("div");
+        chip.className = "wk-chip";
+        chip.style.setProperty("--cat", ev.projectColor || "var(--fg-2)");
+        var t = document.createElement("span");
+        t.className = "c-t";
+        t.textContent = ev.time || "";
+        chip.appendChild(t);
+        chip.appendChild(document.createTextNode(" " + (ev.title || "")));
+        tasks.appendChild(chip);
+      });
+
+      if (!hasAny) {
+        var dash = document.createElement("div");
+        dash.style.cssText = "font-size:10px;color:var(--meta);";
+        dash.textContent = "—";
+        tasks.appendChild(dash);
+      }
+
+      div.appendChild(head);
+      div.appendChild(tasks);
+      grid.appendChild(div);
+    });
+  }
+
+  /* ============ render: matrix ============ */
+  function renderMatrix(DATA) {
+    var quadAttr = { do: "1", plan: "2", delegate: "3", eliminate: "4" };
+    var matrix = DATA.matrix || [];
+
+    Object.keys(quadAttr).forEach(function (quadKey) {
+      var qel = document.querySelector('.quad[data-q="' + quadAttr[quadKey] + '"]');
+      if (!qel) return;
+      var list = qel.querySelector(".quad-list");
+      if (!list) return;
+      list.innerHTML = "";
+
+      var items = matrix.filter(function (m) { return m.quad === quadKey; });
+      if (items.length === 0) {
+        var empty = document.createElement("div");
+        empty.className = "empty-note";
+        empty.textContent = "暂无";
+        list.appendChild(empty);
+        return;
+      }
+
+      items.slice(0, 50).forEach(function (m) {
+        var card = document.createElement("div");
+        card.className = "m-card task";
+        card.setAttribute("draggable", "true");
+        card.setAttribute("data-id", m.id || "");
+        card.setAttribute("title", m.dueLabel ? ("截止: " + m.dueLabel) : "");
+        var grip = document.createElement("span");
+        grip.className = "grip";
+        grip.textContent = "⋮⋮";
+        var ttl = document.createElement("span");
+        ttl.className = "m-card-title";
+        ttl.textContent = m.title || "";
+        card.appendChild(grip);
+        card.appendChild(ttl);
+        list.appendChild(card);
+      });
+
+      if (items.length > 50) {
+        var note = document.createElement("div");
+        note.className = "empty-note";
+        note.style.fontSize = "10px";
+        note.textContent = "共 " + items.length + " 条，显示前 50";
+        list.appendChild(note);
+      }
+    });
+  }
+
+  /* ============ render: whole-page empty state ============ */
+  function checkWholeEmpty(DATA) {
+    var ws = document.getElementById("workspaceInner");
+    if (!ws) return false;
+    var total = DATA.stats ? DATA.stats.total : null;
+    var matrixLen = (DATA.matrix || []).length;
+    var focusLen = (DATA.focus || []).length;
+    if (total === 0 && matrixLen === 0 && focusLen === 0) {
+      ws.innerHTML = '<div class="whole-empty">🎉 没有未完成任务</div>';
+      return true;
+    }
+    return false;
+  }
+
+  /* ============ master render ============ */
+  function render(DATA) {
+    if (checkWholeEmpty(DATA)) return;
+    renderDateChip(DATA);
+    renderMinical(DATA);
+    renderStats(DATA);
+    renderCats(DATA);
+    renderFocus(DATA);
+    renderTimelineDay(DATA);
+    renderTimelineWeek(DATA);
+    renderMatrix(DATA);
+  }
+
+  /* ============ bind interactions (after render) ============ */
+  function bindAll() {
+    bindCheckboxToggle();
+    bindTimelineToggle();
+    bindMinicalSelect();
+    bindMatrixDrag();
+    bindNewTaskComposer();
+  }
+
+  /* ---- Task completion (checkbox toggles .done) — event delegation ---- */
+  function bindCheckboxToggle() {
+    document.addEventListener("click", function (e) {
+      var ck = e.target.closest("[data-check]");
+      if (ck) {
+        var task = ck.closest(".task");
+        if (task) task.classList.toggle("done");
+      }
+    });
+  }
+
+  /* ---- Day / Week timeline toggle ---- */
+  function bindTimelineToggle() {
+    var tlToggle = document.getElementById("tlToggle");
+    if (!tlToggle) return;
+    tlToggle.addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-view]");
+      if (!btn) return;
+      var view = btn.getAttribute("data-view");
+      tlToggle.querySelectorAll("button").forEach(function (b) {
+        b.classList.toggle("on", b === btn);
+      });
+      document.querySelectorAll(".tl-view").forEach(function (v) {
+        v.classList.toggle("on", v.getAttribute("data-tl") === view);
+      });
+    });
+  }
+
+  /* ---- Mini-calendar date selection ---- */
+  function bindMinicalSelect() {
+    var minical = document.getElementById("minical");
+    if (!minical) return;
+    minical.addEventListener("click", function (e) {
+      var d = e.target.closest(".d:not(.dim)");
+      if (!d) return;
+      minical.querySelectorAll(".d").forEach(function (x) {
+        if (x !== d && x.classList.contains("sel")) x.classList.remove("sel");
+      });
+      if (!d.classList.contains("today")) d.classList.toggle("sel");
+    });
+  }
+
+  /* ---- Eisenhower matrix: HTML5 drag & drop across quadrants ---- */
+  function bindMatrixDrag() {
+    var quads = document.querySelectorAll(".quad");
+
+    function bindCard(card) {
+      card.addEventListener("dragstart", function (e) {
+        card.classList.add("dragging");
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", card.getAttribute("data-id") || "");
+        }
+      });
+      card.addEventListener("dragend", function () {
+        card.classList.remove("dragging");
+      });
+    }
+
+    document.querySelectorAll(".m-card").forEach(bindCard);
+
+    quads.forEach(function (q) {
+      q.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        q.classList.add("drop");
+      });
+      q.addEventListener("dragleave", function (e) {
+        if (!q.contains(e.relatedTarget)) q.classList.remove("drop");
+      });
+      q.addEventListener("drop", function (e) {
+        e.preventDefault();
+        q.classList.remove("drop");
+        var id = e.dataTransfer ? e.dataTransfer.getData("text/plain") : "";
+        var card = id && document.querySelector('.m-card[data-id="' + id + '"]');
+        var list = q.querySelector(".quad-list");
+        if (card && list && card.closest(".quad") !== q) {
+          list.appendChild(card);
+        }
+      });
+    });
+  }
+
+  /* ---- New task: reveal inline composer, Enter adds a focus card ---- */
+  function bindNewTaskComposer() {
+    var newBtn = document.getElementById("newTaskBtn");
+    var focusAdd = document.getElementById("focusAdd");
+    var focusInput = document.getElementById("focusInput");
+    var focusRow = document.getElementById("focusRow");
+    var seq = 1000;
+
+    function openComposer() {
+      if (!focusAdd) return;
+      focusAdd.classList.add("open");
+      setTimeout(function () { focusInput && focusInput.focus(); }, 30);
+    }
+    if (newBtn) newBtn.addEventListener("click", openComposer);
+
+    function addFocusCard(title) {
+      if (!title || !focusRow) return;
+      var el = document.createElement("article");
+      el.className = "focus-card task";
+      el.setAttribute("data-id", "local" + (++seq));
+
+      var fcTop = document.createElement("div");
+      fcTop.className = "fc-top";
+      var tag = document.createElement("span");
+      tag.className = "fc-tag";
+      tag.style.background = "var(--bg)";
+      tag.textContent = "新建";
+      var time = document.createElement("span");
+      time.className = "fc-time";
+      time.textContent = "待安排";
+      fcTop.appendChild(tag);
+      fcTop.appendChild(time);
+
+      var bodyDiv = document.createElement("div");
+      bodyDiv.style.cssText = "display:flex;gap:var(--space-3);align-items:flex-start;";
+      var check = document.createElement("span");
+      check.className = "check";
+      check.setAttribute("data-check", "");
+      var ttl = document.createElement("span");
+      ttl.className = "fc-title";
+      ttl.textContent = title;
+      bodyDiv.appendChild(check);
+      bodyDiv.appendChild(ttl);
+
+      var meta = document.createElement("div");
+      meta.className = "fc-meta";
+      var cat = document.createElement("span");
+      cat.className = "cat";
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = "var(--fg-2)";
+      cat.appendChild(dot);
+      cat.appendChild(document.createTextNode(" 未分类 · 不会同步"));
+      meta.appendChild(cat);
+
+      el.appendChild(fcTop);
+      el.appendChild(bodyDiv);
+      el.appendChild(meta);
+      focusRow.appendChild(el);
+    }
+
+    if (focusInput) {
+      focusInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          var v = focusInput.value.trim();
+          if (v) { addFocusCard(v); focusInput.value = ""; }
+        } else if (e.key === "Escape") {
+          focusAdd.classList.remove("open");
+          focusInput.value = "";
+        }
+      });
+    }
+  }
+
+  /* ============ boot ============ */
+  var dataObj = (typeof DATA !== "undefined") ? DATA : {};
+  render(dataObj);
+  bindAll();
+})();
+</script>
+</body>
+</html>

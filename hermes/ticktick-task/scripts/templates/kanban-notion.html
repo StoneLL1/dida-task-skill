@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>日程 · 看板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* =========================================================================
+   1. TOKENS — Notion 设计系统（tokens.css 逐字绑定 + 语义扩展）
+   ========================================================================= */
+:root{
+  /* ─── Surface ─── */
+  --bg:#ffffff;
+  --surface:#f6f5f4;
+  --surface-warm:var(--surface);
+  /* ─── Foreground ─── */
+  --fg:rgba(0,0,0,0.95);
+  --fg-2:#31302e;
+  --muted:#615d59;
+  --meta:#a39e98;
+  /* ─── Border ─── */
+  --border:rgba(0,0,0,0.1);
+  --border-soft:rgba(0,0,0,0.06);
+  /* ─── Accent ─── */
+  --accent:#0075de;
+  --accent-on:#ffffff;
+  --accent-hover:#005bab;
+  --accent-active:color-mix(in oklab,var(--accent),black 14%);
+  /* ─── Semantic ─── */
+  --success:#1aae39;
+  --warn:#dd5b00;
+  --danger:#dc2626;
+  /* Notion 语义点缀色（用于分类点 / 象限） */
+  --teal:#2a9d99;
+  --purple:#391c57;
+  --pink:#ff64c8;
+  --brown:#523410;
+  /* 四象限语义映射 */
+  --q1:var(--danger);
+  --q2:var(--teal);
+  --q3:var(--warn);
+  --q4:var(--muted);
+  /* ─── Typography ─── */
+  --font-display:"Inter",NotionInter,-apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-body:"Inter",NotionInter,-apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --text-xs:12px; --text-sm:14px; --text-base:16px; --text-lg:20px;
+  --text-xl:26px; --text-2xl:40px; --text-3xl:48px;
+  --leading-body:1.5; --leading-tight:1.0;
+  --tracking-display:-0.033em;
+  /* ─── Spacing ─── */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px; --space-12:48px;
+  /* ─── Radius ─── */
+  --radius-sm:4px; --radius-md:8px; --radius-lg:12px; --radius-pill:9999px;
+  /* ─── Elevation ─── */
+  --elev-ring:0 0 0 1px var(--border);
+  --elev-raised:rgba(0,0,0,0.04) 0 4px 18px,rgba(0,0,0,0.027) 0 2px 7.85px,rgba(0,0,0,0.02) 0 0.8px 2.93px,rgba(0,0,0,0.01) 0 0.175px 1.04px;
+  /* ─── Focus ─── */
+  --focus-ring:0 0 0 3px rgba(9,127,232,0.3);
+  /* ─── Motion ─── */
+  --motion-fast:150ms; --motion-base:200ms; --ease-standard:cubic-bezier(0.2,0,0,1);
+  /* ─── Layout ─── */
+  --sidebar-w:232px;
+  color-scheme:light;
+}
+
+/* =========================================================================
+   2. RESET & BASE
+   ========================================================================= */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font-body);
+  background:var(--surface);          /* 暖白画布 — Notion 纸感工作区 */
+  color:var(--fg);
+  font-size:15px;line-height:var(--leading-body);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"lnum","locl";
+}
+button{font:inherit;color:inherit}
+::selection{background:rgba(0,117,222,0.18)}
+:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-sm)}
+/* 全局图标优化：圆角端点 / 转角 + 精准几何渲染（Notion 线性图标质感） */
+svg{stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision}
+
+/* =========================================================================
+   3. APP SHELL
+   ========================================================================= */
+.app{display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:100vh}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:var(--space-5) var(--space-3);
+  display:flex;flex-direction:column;gap:var(--space-6);
+  position:sticky;top:0;height:100vh;overflow:auto;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:0 var(--space-2)}
+.brand .logo{width:28px;height:28px;border-radius:var(--radius-md);background:var(--fg);color:#fff;display:grid;place-items:center;flex:none}
+.brand .logo svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+.brand .name{font-weight:700;font-size:15px;letter-spacing:-0.01em}
+.side-title{font-size:var(--text-xs);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--meta);padding:0 var(--space-2);margin-bottom:var(--space-2)}
+
+/* mini calendar */
+.minical-head{display:flex;justify-content:space-between;align-items:center;padding:0 var(--space-2) var(--space-2)}
+.minical-month{font-weight:600;font-size:13px;letter-spacing:-0.01em}
+.minical-nav{display:flex;gap:2px}
+.iconbtn{width:24px;height:24px;border:0;background:transparent;border-radius:var(--radius-sm);color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.iconbtn:hover{background:rgba(0,0,0,0.05);color:var(--fg)}
+.iconbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8}
+.minical-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:0 2px}
+.mc-dow{font-size:10px;color:var(--meta);text-align:center;padding:3px 0;font-weight:500}
+.mc-day{font-size:12px;text-align:center;padding:5px 0;border-radius:var(--radius-sm);cursor:pointer;color:var(--fg);font-variant-numeric:tabular-nums;position:relative}
+.mc-day:hover{background:rgba(0,0,0,0.05)}
+.mc-day.out{color:var(--meta);opacity:.6}
+.mc-day.today{background:var(--accent);color:#fff;font-weight:600}
+.mc-day.sel{background:rgba(0,0,0,0.06);font-weight:600}
+
+/* category lists */
+.lists{display:flex;flex-direction:column;gap:1px}
+.list{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:5px;cursor:pointer;color:var(--fg);font-size:14px}
+.list:hover{background:rgba(0,0,0,0.04)}
+.list.active{background:rgba(0,0,0,0.055);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot-work{background:var(--purple)}
+.dot-self{background:var(--teal)}
+.dot-health{background:var(--success)}
+.dot-study{background:var(--warn)}
+.list .count{margin-left:auto;font-size:12px;color:var(--meta);font-variant-numeric:tabular-nums}
+
+/* ---------- Main ---------- */
+.main{padding:22px 30px 48px;min-width:0;display:flex;flex-direction:column;gap:var(--space-5)}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap}
+.crumb{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.crumb svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8}
+.topbar h1{font-size:var(--text-xl);font-weight:700;letter-spacing:-0.025em;line-height:1.15}
+.topbar .spacer{flex:1}
+.search{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--meta);font-size:13px;width:210px}
+.search svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8}
+.search input{border:0;background:transparent;outline:none;font:inherit;color:var(--fg);width:100%}
+.search input::placeholder{color:var(--meta)}
+
+/* segmented control (日 / 周) — Notion 风格：中性，不占强调色 */
+.seg{display:inline-flex;background:rgba(0,0,0,0.05);border-radius:var(--radius-sm);padding:2px;gap:1px}
+.seg button{border:0;background:transparent;padding:5px 14px;border-radius:3px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button.active{background:var(--bg);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,0.08)}
+.seg button:hover:not(.active){color:var(--fg)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;border-radius:var(--radius-sm);padding:7px 13px;cursor:pointer;font-size:13px;font-weight:600;letter-spacing:0.01em;transition:background var(--motion-fast) var(--ease-standard),transform var(--motion-fast)}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:active{transform:scale(0.97)}
+.btn-ghost{background:transparent;color:var(--fg)}
+.btn-ghost:hover{background:rgba(0,0,0,0.05)}
+.btn-ghost svg{color:var(--muted)}
+
+/* =========================================================================
+   4. PANEL 基础（卡片 / 区块标题）
+   ========================================================================= */
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--elev-raised)}
+.panel-head{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--border-soft)}
+.panel-head .h-ico{width:18px;height:18px;color:var(--muted);stroke:currentColor;fill:none;stroke-width:1.8}
+.panel-head h2{font-size:15px;font-weight:700;letter-spacing:-0.01em}
+.panel-head .sub{font-size:12px;color:var(--meta);font-weight:400}
+.panel-head .grow{flex:1}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;letter-spacing:0.02em;background:rgba(0,0,0,0.05);color:var(--muted);padding:3px 8px;border-radius:var(--radius-pill)}
+
+/* =========================================================================
+   5. 今日焦点
+   ========================================================================= */
+.focus-body{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);padding:var(--space-4)}
+.focus-card{border:1px solid var(--border-soft);border-radius:var(--radius-md);padding:13px 14px;display:flex;flex-direction:column;gap:9px;background:var(--bg);transition:box-shadow var(--motion-fast),border-color var(--motion-fast)}
+.focus-card:hover{box-shadow:var(--elev-raised);border-color:var(--border)}
+.focus-top{display:flex;align-items:center;gap:7px}
+.focus-top .time{font-size:12px;font-weight:600;color:var(--fg-2);font-variant-numeric:tabular-nums}
+.focus-top .catdot{width:7px;height:7px;border-radius:50%}
+.focus-top .badge{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:0.04em;padding:2px 7px;border-radius:var(--radius-pill)}
+.badge-high{background:color-mix(in oklab,var(--danger),white 86%);color:#a01f1f}
+.badge-mid{background:color-mix(in oklab,var(--warn),white 86%);color:#9a3f00}
+.focus-title{font-size:14px;font-weight:500;line-height:1.4;color:var(--fg);letter-spacing:-0.005em}
+
+/* checkbox */
+.cbox{width:18px;height:18px;border:1.6px solid var(--meta);border-radius:4px;flex:none;cursor:pointer;display:grid;place-items:center;transition:border-color var(--motion-fast),background var(--motion-fast);background:var(--bg)}
+.cbox:hover{border-color:var(--accent)}
+.cbox.on{background:var(--accent);border-color:var(--accent)}
+.cbox svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.6;opacity:0;transform:scale(0.6);transition:opacity var(--motion-fast),transform var(--motion-fast)}
+.cbox.on svg{opacity:1;transform:scale(1)}
+
+/* done state */
+.done .focus-title{text-decoration:line-through;color:var(--meta)}
+.done .time,.done .badge{opacity:.5}
+.focus-foot{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--meta)}
+.focus-foot svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+.add-task-row{display:none;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border-soft)}
+.add-task-row.show{display:flex}
+.add-task-row .cbox{border-style:dashed}
+.add-task-row input{border:0;outline:none;font:inherit;background:transparent;flex:1;color:var(--fg)}
+.add-task-row input::placeholder{color:var(--meta)}
+
+/* =========================================================================
+   6. 工作区双栏：时间轴 × 四象限
+   ========================================================================= */
+.work{display:grid;grid-template-columns:1.45fr 1fr;gap:var(--space-5);align-items:start}
+
+/* ---------- 时间轴 ---------- */
+.tl-body{padding:0}
+.tl-day,.tl-week{display:none}
+.tl-day.active,.tl-week.active{display:block}
+
+/* 日：定位日历 */
+.tl-day{position:relative;padding:14px 18px 18px}
+.tl-now{position:absolute;left:18px;right:18px;height:0;border-top:1.5px solid var(--danger);z-index:3;pointer-events:none}
+.tl-now::before{content:"";position:absolute;left:-5px;top:-5px;width:9px;height:9px;border-radius:50%;background:var(--danger)}
+.tl-now .now-label{position:absolute;left:-46px;top:-9px;font-size:10px;font-weight:700;color:var(--danger);background:var(--bg);padding:0 4px;font-variant-numeric:tabular-nums}
+.tl-grid{position:relative;display:grid;grid-template-columns:52px 1fr;margin-left:44px}
+.tl-hours{display:flex;flex-direction:column}
+.tl-hour{height:56px;font-size:11px;color:var(--meta);transform:translateY(-7px);font-variant-numeric:tabular-nums;padding-right:10px;text-align:right}
+.tl-track{position:relative;border-left:1px solid var(--border-soft);height:728px}
+.tl-track::before{content:"";position:absolute;inset:0;background-image:linear-gradient(to bottom,transparent 55px,var(--border-soft) 55px,var(--border-soft) 56px,transparent 56px);background-size:100% 56px}
+.tl-event{position:absolute;left:6px;right:8px;border-radius:var(--radius-md);padding:7px 10px;border:1px solid var(--border-soft);background:var(--bg);cursor:pointer;transition:box-shadow var(--motion-fast),transform var(--motion-fast);z-index:2;display:flex;flex-direction:column;gap:2px}
+.tl-event:hover{box-shadow:var(--elev-raised);transform:translateX(2px)}
+.tl-event .ev-when{font-size:10.5px;color:var(--meta);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px}
+.tl-event .ev-when .cddot{width:6px;height:6px;border-radius:50%}
+.tl-event .ev-title{font-size:12.5px;font-weight:500;color:var(--fg);line-height:1.3}
+.tl-event.is-now{border-color:color-mix(in oklab,var(--danger),white 40%);box-shadow:0 0 0 2px color-mix(in oklab,var(--danger),white 80%)}
+
+/* 周：七列议程 */
+.tl-week{padding:10px 14px 16px}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wd-col{border-radius:var(--radius-md);padding:8px 6px;min-height:240px;background:var(--surface)}
+.wd-col.is-today{background:color-mix(in oklab,var(--accent),white 92%)}
+.wd-head{text-align:center;padding-bottom:7px;border-bottom:1px solid var(--border-soft);margin-bottom:7px}
+.wd-dow{font-size:11px;color:var(--meta);font-weight:500}
+.wd-num{font-size:15px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;margin-top:1px}
+.wd-col.is-today .wd-num{color:var(--accent)}
+.wd-ev{display:block;background:var(--bg);border:1px solid var(--border-soft);border-radius:5px;padding:5px 6px;margin-bottom:5px;cursor:pointer;transition:box-shadow var(--motion-fast)}
+.wd-ev:hover{box-shadow:var(--elev-raised)}
+.wd-ev .wt{font-size:10px;color:var(--meta);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px}
+.wd-ev .wt .cddot{width:5px;height:5px;border-radius:50%}
+.wd-ev .wn{font-size:11px;font-weight:500;color:var(--fg);line-height:1.25;margin-top:1px}
+
+/* ---------- 四象限 ---------- */
+.quad-body{padding:var(--space-4);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--space-3)}
+.q-cell{border-radius:var(--radius-md);padding:11px 12px;display:flex;flex-direction:column;gap:8px;min-height:188px;border:1px solid var(--border-soft);background:color-mix(in oklab,var(--qbg,var(--muted)),white 94%);transition:background var(--motion-fast),box-shadow var(--motion-fast)}
+.q-cell.drop-over{background:color-mix(in oklab,var(--qbg,var(--muted)),white 88%);box-shadow:inset 0 0 0 2px var(--qbg,var(--muted))}
+.q-cell[data-q="1"]{--qbg:var(--q1)}
+.q-cell[data-q="2"]{--qbg:var(--q2)}
+.q-cell[data-q="3"]{--qbg:var(--q3)}
+.q-cell[data-q="4"]{--qbg:var(--q4)}
+.q-label{display:flex;align-items:center;gap:7px}
+.q-label .qn{font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--qbg);text-transform:uppercase}
+.q-label .qt{font-size:12px;color:var(--muted);font-weight:500}
+.q-label .qn-pill{width:8px;height:8px;border-radius:50%;background:var(--qbg)}
+.q-list{display:flex;flex-direction:column;gap:6px;flex:1}
+.q-card{display:flex;align-items:flex-start;gap:8px;background:var(--bg);border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:8px 9px;cursor:grab;transition:box-shadow var(--motion-fast),opacity var(--motion-fast)}
+.q-card:hover{box-shadow:var(--elev-raised)}
+.q-card:active{cursor:grabbing}
+.q-card.dragging{opacity:.4}
+.q-card .cbox{width:15px;height:15px;border-width:1.5px}
+.q-card .cbox svg{width:9px;height:9px}
+.q-card .qt2{font-size:12.5px;line-height:1.35;color:var(--fg);letter-spacing:-0.005em}
+.q-card.done .qt2{text-decoration:line-through;color:var(--meta)}
+.q-hint{font-size:10.5px;color:var(--meta);letter-spacing:0.02em;display:flex;align-items:center;gap:5px}
+.q-hint svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+/* =========================================================================
+   7. 杂项
+   ========================================================================= */
+.foot-note{font-size:11px;color:var(--meta);text-align:center;padding-top:6px;letter-spacing:0.02em}
+.kbd{font-family:var(--font-mono);font-size:10px;background:rgba(0,0,0,0.06);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--muted)}
+
+@media (max-width:1080px){
+  .work{grid-template-columns:1fr}
+  .focus-body{grid-template-columns:repeat(2,1fr)}
+}
+
+/* === injected ===
+   仅追加：预览横幅 / 全天栏 / 空状态 / 迷你日历任务点 / 全天 chip / 低优先徽章 */
+
+/* —— 顶部预览横幅（不可关闭）—— */
+.preview-banner{
+  background:color-mix(in oklab,var(--warn),white 90%);
+  border-bottom:1px solid color-mix(in oklab,var(--warn),white 65%);
+  color:color-mix(in oklab,var(--warn),black 18%);
+  padding:6px 16px;
+  font-size:12px;
+  text-align:center;
+  font-weight:500;
+  letter-spacing:0.01em;
+  position:sticky;top:0;z-index:50;
+}
+.preview-banner .pvb-ico{display:inline-block;margin-right:6px;font-weight:700}
+
+/* —— 全天栏（日视图）—— */
+.tl-allday{
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  padding:6px 0 8px 96px;
+  margin-bottom:6px;
+  border-bottom:1px dashed var(--border-soft);
+}
+.tl-allday:empty{display:none}
+.tl-allday .allday-label{
+  font-size:10px;color:var(--meta);font-weight:700;
+  letter-spacing:0.06em;text-transform:uppercase;
+  margin-right:4px;
+}
+.tl-allday .allday-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--surface);
+  border:1px solid var(--border-soft);
+  border-radius:var(--radius-pill);
+  padding:3px 10px;
+  font-size:11px;color:var(--fg-2);font-weight:500;
+}
+.tl-allday .allday-chip .cddot{width:6px;height:6px;border-radius:50%;flex:none}
+
+/* —— 迷你日历：任务点 —— */
+.mc-day.has-tasks::after{
+  content:"";position:absolute;bottom:1px;left:50%;
+  transform:translateX(-50%);
+  width:3px;height:3px;border-radius:50%;
+  background:var(--accent);
+}
+.mc-day.today.has-tasks::after{background:#fff;bottom:0}
+.mc-day.out.has-tasks::after{display:none}
+
+/* —— 低优先徽章 —— */
+.badge-low{background:color-mix(in oklab,var(--accent),white 86%);color:#0a4d8a}
+
+/* —— 空状态 —— */
+.empty-state{
+  padding:24px 16px;text-align:center;
+  color:var(--meta);font-size:13px;
+}
+.empty-state.small{padding:10px 8px;font-size:11px}
+.empty-state.tiny{padding:6px 4px;font-size:10.5px}
+.empty-state.hero{
+  padding:80px 20px;font-size:18px;color:var(--muted);
+}
+.empty-state.note{font-size:11px;color:var(--meta);padding:8px;text-align:center}
+
+/* —— 周视图空列 —— */
+.wd-empty{
+  font-size:10px;color:var(--meta);text-align:center;
+  padding:8px 0;opacity:.6;
+}
+
+/* —— 周视图全天 chip —— */
+.wd-ev.allday{background:color-mix(in oklab,var(--accent),white 92%)}
+</style>
+</head>
+<body>
+<div class="preview-banner"><span class="pvb-ico">⚠</span>本地预览 · 不同步滴答清单，改动请回对话同步</div>
+
+<div class="app">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M8.5 15h2M12.5 15h3"/></svg>
+      </span>
+      <span class="name">日程</span>
+    </div>
+
+    <div>
+      <div class="minical-head">
+        <span class="minical-month" id="mc-month"></span>
+        <div class="minical-nav">
+          <button class="iconbtn" id="mc-prev" aria-label="上个月"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button class="iconbtn" id="mc-next" aria-label="下个月"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="minical-grid" id="minical"></div>
+    </div>
+
+    <div>
+      <div class="side-title">清单</div>
+      <nav class="lists" id="cat-list"></nav>
+    </div>
+
+    <div>
+      <div class="side-title">快捷</div>
+      <nav class="lists" id="quick-list"></nav>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="main">
+
+    <!-- ---------- TOPBAR ---------- -->
+    <header class="topbar">
+      <div>
+        <div class="crumb">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>
+          工作区 / 我的日程
+        </div>
+        <h1 id="page-title"></h1>
+      </div>
+      <div class="spacer"></div>
+      <label class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input type="text" placeholder="搜索任务、清单…" />
+      </label>
+      <div class="seg" id="view-seg" role="tablist" aria-label="时间轴视图">
+        <button class="active" data-view="day" role="tab">日</button>
+        <button data-view="week" role="tab">周</button>
+      </div>
+      <button class="btn btn-primary" id="add-btn">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>新建任务
+      </button>
+    </header>
+
+    <!-- ---------- 今日焦点 ---------- -->
+    <section class="panel">
+      <div class="panel-head">
+        <svg class="h-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        <h2>今日焦点</h2>
+        <span class="sub" id="focus-sub"></span>
+        <span class="grow"></span>
+        <span class="chip">聚焦</span>
+      </div>
+      <div class="focus-body" id="focus-body"></div>
+      <div class="add-task-row" id="add-row">
+        <span class="cbox" aria-hidden="true"></span>
+        <input id="add-input" type="text" placeholder="新增今日焦点任务，回车添加…" />
+        <button class="btn btn-ghost" id="add-cancel">取消</button>
+      </div>
+    </section>
+
+    <!-- ---------- 时间轴 × 四象限 ---------- -->
+    <div class="work">
+
+      <!-- 时间轴 -->
+      <section class="panel">
+        <div class="panel-head">
+          <svg class="h-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <h2>时间轴</h2>
+          <span class="sub" id="tl-sub"></span>
+          <span class="grow"></span>
+          <span class="chip" id="tl-count"></span>
+        </div>
+        <div class="tl-body">
+
+          <!-- 日视图 -->
+          <div class="tl-day active" id="tl-day">
+            <div class="tl-allday" id="tl-allday-row"></div>
+            <div class="tl-grid">
+              <div class="tl-hours">
+                <div class="tl-hour">08:00</div><div class="tl-hour">09:00</div>
+                <div class="tl-hour">10:00</div><div class="tl-hour">11:00</div>
+                <div class="tl-hour">12:00</div><div class="tl-hour">13:00</div>
+                <div class="tl-hour">14:00</div><div class="tl-hour">15:00</div>
+                <div class="tl-hour">16:00</div><div class="tl-hour">17:00</div>
+                <div class="tl-hour">18:00</div><div class="tl-hour">19:00</div>
+                <div class="tl-hour">20:00</div><div class="tl-hour">21:00</div>
+              </div>
+              <div class="tl-track" id="tl-track">
+                <div class="tl-now" id="tl-now" style="display:none"><span class="now-label"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 周视图 -->
+          <div class="tl-week" id="tl-week">
+            <div class="week-grid" id="week-grid"></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 四象限 -->
+      <section class="panel">
+        <div class="panel-head">
+          <svg class="h-ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18M3 12h18"/></svg>
+          <h2>优先级四象限</h2>
+          <span class="grow"></span>
+          <span class="chip">拖拽归类</span>
+        </div>
+        <div class="quad-body" id="quad-body">
+
+          <div class="q-cell" data-q="1">
+            <div class="q-label"><span class="qn-pill"></span><span class="qn">Q1 立即做</span><span class="qt">紧急 · 重要</span></div>
+            <div class="q-list" id="q-list-1"></div>
+          </div>
+
+          <div class="q-cell" data-q="2">
+            <div class="q-label"><span class="qn-pill"></span><span class="qn">Q2 计划做</span><span class="qt">重要 · 不紧急</span></div>
+            <div class="q-list" id="q-list-2"></div>
+          </div>
+
+          <div class="q-cell" data-q="3">
+            <div class="q-label"><span class="qn-pill"></span><span class="qn">Q3 委托 / 简化</span><span class="qt">紧急 · 不重要</span></div>
+            <div class="q-list" id="q-list-3"></div>
+          </div>
+
+          <div class="q-cell" data-q="4">
+            <div class="q-label"><span class="qn-pill"></span><span class="qn">Q4 尽量少做</span><span class="qt">不紧急 · 不重要</span></div>
+            <div class="q-list" id="q-list-4"></div>
+            <div class="q-hint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>这些任务拖到任意象限即可重新归类</div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="foot-note">快捷键：<span class="kbd">N</span> 新建任务 · <span class="kbd">D</span> / <span class="kbd">W</span> 切换日 / 周视图</div>
+  </main>
+</div>
+
+<script>const DATA = INJECT_DATA_HERE;</script>
+<script>
+/* =========================================================================
+   渲染层 + 交互层（CJX-ready）—— 全部从 DATA 渲染，不联网、不写回 TickTick
+   所有本地状态持久化到 localStorage（schedule:state:v1）。
+   ========================================================================= */
+(function(){
+  "use strict";
+  var STORE = "schedule:state:v1";
+  var BASE_HOUR = 8;            /* 时间轴起点 08:00 */
+  var END_HOUR  = 22;           /* 时间轴终点 22:00 */
+  var PX_PER_HOUR = 56;         /* 与 .tl-hour 高度绑定 */
+  var MAX_RENDER = 100;         /* 单区块渲染上限 */
+
+  /* ---------- 工具 ---------- */
+  function $(s,r){return (r||document).querySelector(s);}
+  function $all(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function safeData(o, key, fb){
+    return (o && o[key]!=null) ? o[key] : fb;
+  }
+  function timeToMin(s){
+    if(!s) return null;
+    var m = String(s).match(/^(\d{1,2}):(\d{2})/);
+    return m ? (parseInt(m[1],10)*60 + parseInt(m[2],10)) : null;
+  }
+  function fmtRangeLabel(isoA, isoB){
+    function p(iso){
+      if(!iso) return "";
+      var parts = iso.split("-");
+      if(parts.length < 3) return iso;
+      return parseInt(parts[1],10) + "." + parseInt(parts[2],10);
+    }
+    if(!isoA && !isoB) return "";
+    if(isoA && isoB) return p(isoA) + " – " + p(isoB);
+    return p(isoA||isoB);
+  }
+
+  /* DATA 防御：注入失败时给个空壳，避免整页崩 */
+  if(typeof DATA === "undefined" || !DATA){
+    console.warn("[kanban] DATA missing — rendering empty state");
+    var main = document.querySelector(".main");
+    if(main){
+      main.innerHTML = '<div class="empty-state hero">🎉 没有未完成任务</div>';
+    }
+    return;
+  }
+
+  /* —— 视图月份（迷你日历导航用）—— */
+  var viewY, viewM;
+  function initMonth(){
+    var cal = DATA.calendar || {};
+    if(cal.year && cal.month){
+      viewY = cal.year;
+      viewM = cal.month - 1; /* JS 0-based */
+    } else if(DATA.today){
+      viewY = DATA.today.y;
+      viewM = DATA.today.m - 1;
+    } else {
+      var n = new Date();
+      viewY = n.getFullYear();
+      viewM = n.getMonth();
+    }
+  }
+
+  /* ========================================================
+     渲染：迷你日历（读 DATA.calendar）
+     ======================================================== */
+  function renderMinical(){
+    var grid = $("#minical"); if(!grid) return;
+    grid.innerHTML = "";
+    ["日","一","二","三","四","五","六"].forEach(function(d){
+      var e = document.createElement("div"); e.className="mc-dow"; e.textContent=d; grid.appendChild(e);
+    });
+    var cal = DATA.calendar || {};
+    var first = new Date(viewY, viewM, 1);
+    var startDow = first.getDay();
+    var daysInMonth = new Date(viewY, viewM+1, 0).getDate();
+    var prevDays = new Date(viewY, viewM, 0).getDate();
+
+    /* count 索引：仅当月（viewY/viewM === cal.year/cal.month）才有意义 */
+    var countMap = {};
+    var sameMonth = (cal.year===viewY && (cal.month-1)===viewM);
+    if(sameMonth){
+      (cal.days || []).forEach(function(dy){ if(dy && dy.d) countMap[dy.d] = dy.count; });
+    }
+    var todayD = sameMonth ? (cal.todayD || (DATA.today ? DATA.today.d : null)) : null;
+
+    var cells = [];
+    for(var i = startDow - 1; i >= 0; i--) cells.push({d: prevDays - i, out: true});
+    for(var d = 1; d <= daysInMonth; d++) cells.push({d: d, out: false});
+    var nextFlag = 1;
+    while(cells.length < 42){ cells.push({d: nextFlag++, out: true}); }
+
+    cells.forEach(function(c){
+      var e = document.createElement("div");
+      e.className = "mc-day" + (c.out ? " out" : "");
+      e.textContent = c.d;
+      if(!c.out){
+        if(todayD && c.d === todayD) e.classList.add("today");
+        if(countMap[c.d] > 0) e.classList.add("has-tasks");
+      }
+      grid.appendChild(e);
+    });
+    var names = ["1 月","2 月","3 月","4 月","5 月","6 月","7 月","8 月","9 月","10 月","11 月","12 月"];
+    $("#mc-month").textContent = viewY + " 年 " + names[viewM];
+  }
+
+  /* ========================================================
+     渲染：侧栏（清单 + 快捷）
+     ======================================================== */
+  function renderSidebar(){
+    /* categories */
+    var cats = DATA.categories || [];
+    var catList = $("#cat-list");
+    catList.innerHTML = "";
+    if(cats.length === 0){
+      catList.innerHTML = '<div class="empty-state tiny">暂无清单</div>';
+    } else {
+      cats.slice(0, MAX_RENDER).forEach(function(c){
+        var el = document.createElement("div");
+        el.className = "list";
+        el.innerHTML =
+          '<span class="dot" style="background:'+esc(c.color||"var(--muted)")+'"></span>'+
+          '<span>'+esc(c.name)+'</span>'+
+          '<span class="count">'+esc(c.count!=null?c.count:"")+'</span>';
+        catList.appendChild(el);
+      });
+      if(cats.length > MAX_RENDER){
+        var note = document.createElement("div");
+        note.className = "empty-state note";
+        note.textContent = "显示前 " + MAX_RENDER + " 条，共 " + cats.length + " 条";
+        catList.appendChild(note);
+      }
+    }
+    /* quick */
+    var stats = DATA.stats || {};
+    var q = $("#quick-list");
+    q.innerHTML =
+      '<div class="list"><span class="dot" style="background:var(--danger)"></span>逾期<span class="count">'+(stats.overdue||0)+'</span></div>'+
+      '<div class="list"><span class="dot" style="background:var(--success)"></span>已完成<span class="count">'+(stats.completedToday||0)+'</span></div>'+
+      '<div class="list"><span class="dot" style="background:var(--meta)"></span>归档<span class="count">0</span></div>';
+  }
+
+  /* ========================================================
+     渲染：顶栏标题
+     ======================================================== */
+  function renderTopbar(){
+    $("#page-title").textContent = (DATA.today && DATA.today.label) ? DATA.today.label : "今日";
+  }
+
+  /* ========================================================
+     渲染：今日焦点
+     ======================================================== */
+  function renderFocus(){
+    var focus = DATA.focus || [];
+    var body = $("#focus-body");
+    var sub  = $("#focus-sub");
+    body.innerHTML = "";
+    if(focus.length === 0){
+      body.innerHTML = '<div class="empty-state">暂无今日焦点</div>';
+      sub.textContent = "";
+      return;
+    }
+    var list = focus.slice(0, 4);
+    var doneCount = list.filter(function(f){return f.done;}).length;
+    sub.textContent = (list.length - doneCount) + " 件待办 · " + doneCount + " 件已完成";
+
+    list.forEach(function(f){
+      var card = document.createElement("article");
+      card.className = "focus-card" + (f.done ? " done" : "");
+      if(f.id) card.setAttribute("data-od-id", f.id);
+
+      var badgeHtml = "";
+      if(f.done){
+        badgeHtml = '<span class="badge" style="background:color-mix(in oklab,var(--success),white 86%);color:#0c7a28">完成</span>';
+      } else if(f.priority === 5){
+        badgeHtml = '<span class="badge badge-high">高</span>';
+      } else if(f.priority === 3){
+        badgeHtml = '<span class="badge badge-mid">中</span>';
+      } else if(f.priority === 1){
+        badgeHtml = '<span class="badge badge-low">低</span>';
+      }
+
+      var footParts = [];
+      if(f.project) footParts.push(esc(f.project));
+      if(f.dueLabel) footParts.push(esc(f.dueLabel));
+
+      card.innerHTML =
+        '<div class="focus-top">'+
+          '<span class="catdot" style="background:'+esc(f.projectColor||"var(--muted)")+'"></span>'+
+          '<span class="time">'+esc(f.time||"")+'</span>'+
+          badgeHtml+
+        '</div>'+
+        '<div class="focus-title">'+esc(f.title)+'</div>'+
+        '<div class="focus-foot">'+
+          '<span class="cbox'+(f.done?' on':'')+'" role="checkbox" tabindex="0"'+(f.done?' aria-checked="true"':'')+'><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>'+
+          '<span>'+footParts.join(" · ")+'</span>'+
+        '</div>';
+      body.appendChild(card);
+    });
+  }
+
+  /* ========================================================
+     渲染：时间轴日视图（含全天栏）
+     ======================================================== */
+  function renderTimelineDay(){
+    var day = (DATA.timeline && DATA.timeline.day) || {};
+    var events = day.events || [];
+    var allDay = day.allDay || [];
+
+    /* 全天栏 */
+    var alldayEl = $("#tl-allday-row");
+    alldayEl.innerHTML = "";
+    if(allDay.length > 0){
+      var lab = document.createElement("span");
+      lab.className = "allday-label"; lab.textContent = "全天";
+      alldayEl.appendChild(lab);
+      allDay.forEach(function(a){
+        var chip = document.createElement("span");
+        chip.className = "allday-chip";
+        if(a.id) chip.setAttribute("data-od-id", a.id);
+        chip.innerHTML = '<span class="cddot" style="background:'+esc(a.projectColor||"var(--muted)")+'"></span>'+esc(a.title);
+        alldayEl.appendChild(chip);
+      });
+    }
+
+    /* 事件定位 */
+    var track = $("#tl-track");
+    var now = $("#tl-now");
+    track.innerHTML = "";
+    if(now) track.appendChild(now);
+
+    var total = events.length + allDay.length;
+    if(events.length === 0){
+      var em = document.createElement("div");
+      em.className = "empty-state";
+      em.style.position = "absolute";
+      em.style.left = "50%";
+      em.style.top = "50%";
+      em.style.transform = "translate(-50%,-50%)";
+      em.style.width = "100%";
+      em.textContent = allDay.length > 0 ? "" : "今日时间轴暂无安排";
+      track.appendChild(em);
+    } else {
+      var slice = events.slice(0, MAX_RENDER);
+      slice.forEach(function(ev){
+        var startMin = timeToMin(ev.start);
+        var endMin   = timeToMin(ev.end);
+        var top, height;
+        if(startMin != null){
+          /* 夹到 [BASE_HOUR, END_HOUR] 边界 */
+          var sMin = Math.max(BASE_HOUR*60, Math.min(END_HOUR*60, startMin));
+          top = (sMin - BASE_HOUR*60) / 60 * PX_PER_HOUR;
+        } else {
+          top = 0;
+        }
+        if(startMin != null && endMin != null){
+          var eMin = Math.max(sMin || startMin, Math.min(END_HOUR*60, endMin));
+          height = Math.max(22, (eMin - (sMin!=null?sMin:startMin)) / 60 * PX_PER_HOUR);
+        } else {
+          height = 28; /* 短块 */
+        }
+        var timeLabel = ev.start + (ev.end ? " – " + ev.end : "");
+        if(startMin != null && (startMin < BASE_HOUR*60 || startMin > END_HOUR*60)){
+          timeLabel += " · " + ev.start; /* 标注真实时刻 */
+        }
+        var evEl = document.createElement("div");
+        evEl.className = "tl-event";
+        evEl.style.top = top + "px";
+        evEl.style.height = height + "px";
+        if(ev.id) evEl.setAttribute("data-od-id", ev.id);
+        evEl.innerHTML =
+          '<span class="ev-when"><span class="cddot" style="background:'+esc(ev.projectColor||"var(--muted)")+'"></span>'+esc(timeLabel)+'</span>'+
+          '<span class="ev-title">'+esc(ev.title)+'</span>';
+        track.appendChild(evEl);
+      });
+      if(events.length > MAX_RENDER){
+        var note = document.createElement("div");
+        note.className = "empty-state note";
+        note.style.position = "absolute";
+        note.style.bottom = "6px";
+        note.style.left = "0";
+        note.style.right = "0";
+        note.textContent = "显示前 " + MAX_RENDER + " 条，共 " + events.length + " 条";
+        track.appendChild(note);
+      }
+    }
+
+    var cntEl = $("#tl-count");
+    if(cntEl) cntEl.textContent = total + " 个安排";
+  }
+
+  /* ========================================================
+     渲染：时间轴周视图
+     ======================================================== */
+  function renderTimelineWeek(){
+    var week = (DATA.timeline && DATA.timeline.week) || [];
+    var grid = $("#week-grid");
+    grid.innerHTML = "";
+    if(week.length === 0){
+      grid.innerHTML = '<div class="empty-state">本周暂无安排</div>';
+      return;
+    }
+    week.forEach(function(dy){
+      var col = document.createElement("div");
+      col.className = "wd-col" + (dy.isToday ? " is-today" : "");
+      var dParts = (dy.date||"").split("-");
+      var dayNum = dParts[2] ? parseInt(dParts[2],10) : "";
+
+      var head = document.createElement("div");
+      head.className = "wd-head";
+      head.innerHTML = '<div class="wd-dow">'+esc(dy.dow||"")+'</div><div class="wd-num">'+esc(dayNum)+'</div>';
+      col.appendChild(head);
+
+      var allDay = dy.allDay || [];
+      var events = dy.events || [];
+      var total = allDay.length + events.length;
+      var rendered = 0;
+
+      allDay.forEach(function(a){
+        if(rendered >= MAX_RENDER) return;
+        var ev = document.createElement("div");
+        ev.className = "wd-ev allday";
+        if(a.id) ev.setAttribute("data-od-id", a.id);
+        ev.innerHTML = '<span class="wt"><span class="cddot" style="background:'+esc(a.projectColor||"var(--muted)")+'"></span>全天</span><span class="wn">'+esc(a.title)+'</span>';
+        col.appendChild(ev);
+        rendered++;
+      });
+      events.forEach(function(e){
+        if(rendered >= MAX_RENDER) return;
+        var ev = document.createElement("div");
+        ev.className = "wd-ev";
+        if(e.id) ev.setAttribute("data-od-id", e.id);
+        ev.innerHTML = '<span class="wt"><span class="cddot" style="background:'+esc(e.projectColor||"var(--muted)")+'"></span>'+esc(e.time||"")+'</span><span class="wn">'+esc(e.title)+'</span>';
+        col.appendChild(ev);
+        rendered++;
+      });
+      if(total === 0){
+        var em = document.createElement("div");
+        em.className = "wd-empty"; em.textContent = "—";
+        col.appendChild(em);
+      } else if(total > MAX_RENDER){
+        var note = document.createElement("div");
+        note.className = "empty-state tiny";
+        note.textContent = "共 " + total + " 条";
+        col.appendChild(note);
+      }
+      grid.appendChild(col);
+    });
+  }
+
+  /* ========================================================
+     渲染：四象限
+     ======================================================== */
+  var QUAD_MAP = {do:1, plan:2, delegate:3, eliminate:4};
+  function renderMatrix(){
+    var matrix = DATA.matrix || [];
+    var buckets = {do:[], plan:[], delegate:[], eliminate:[]};
+    matrix.forEach(function(t){
+      if(t && buckets[t.quad]) buckets[t.quad].push(t);
+    });
+    Object.keys(QUAD_MAP).forEach(function(qk){
+      var qn = QUAD_MAP[qk];
+      var list = $("#q-list-" + qn);
+      if(!list) return;
+      list.innerHTML = "";
+      var arr = buckets[qk];
+      if(arr.length === 0){
+        var em = document.createElement("div");
+        em.className = "empty-state small";
+        em.textContent = "暂无";
+        list.appendChild(em);
+        return;
+      }
+      arr.slice(0, MAX_RENDER).forEach(function(t){
+        var card = document.createElement("div");
+        card.className = "q-card" + (t.done ? " done" : "");
+        card.setAttribute("draggable", "true");
+        if(t.id) card.setAttribute("data-od-id", t.id);
+        var meta = t.dueLabel ? ' <span style="color:var(--meta);font-size:11px">· '+esc(t.dueLabel)+'</span>' : '';
+        card.innerHTML =
+          '<span class="cbox'+(t.done?' on':'')+'" role="checkbox" tabindex="0"'+(t.done?' aria-checked="true"':'')+'><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>'+
+          '<span class="qt2">'+esc(t.title)+meta+'</span>';
+        list.appendChild(card);
+      });
+      if(arr.length > MAX_RENDER){
+        var note = document.createElement("div");
+        note.className = "empty-state tiny";
+        note.textContent = "显示前 " + MAX_RENDER + " 条，共 " + arr.length + " 条";
+        list.appendChild(note);
+      }
+    });
+  }
+
+  /* ========================================================
+     渲染：现在线（真实时间）
+     ======================================================== */
+  function renderNowLine(){
+    var el = $("#tl-now");
+    if(!el) return;
+    var now = new Date();
+    var minutes = now.getHours()*60 + now.getMinutes();
+    if(minutes < BASE_HOUR*60 || minutes > END_HOUR*60){
+      el.style.display = "none";
+      return;
+    }
+    var top = (minutes - BASE_HOUR*60) / 60 * PX_PER_HOUR;
+    el.style.display = "";
+    el.style.top = top + "px";
+    var lbl = el.querySelector(".now-label");
+    if(lbl){
+      var hh = String(now.getHours()).padStart(2,"0");
+      var mm = String(now.getMinutes()).padStart(2,"0");
+      lbl.textContent = hh + ":" + mm;
+    }
+  }
+
+  /* ========================================================
+     主渲染入口
+     ======================================================== */
+  function render(){
+    initMonth();
+    renderTopbar();
+    renderMinical();
+    renderSidebar();
+    renderFocus();
+    renderTimelineDay();
+    renderTimelineWeek();
+    renderMatrix();
+    renderNowLine();
+  }
+  render();
+
+  /* ========================================================
+     交互绑定（render 后调用）
+     ======================================================== */
+
+  /* —— 迷你日历：切换月份（快照模式，不重新拉数据）—— */
+  $("#mc-prev").addEventListener("click", function(){
+    viewM--; if(viewM < 0){ viewM = 11; viewY--; }
+    renderMinical();
+  });
+  $("#mc-next").addEventListener("click", function(){
+    viewM++; if(viewM > 11){ viewM = 0; viewY++; }
+    renderMinical();
+  });
+
+  /* —— 日 / 周视图切换 —— */
+  var seg = $("#view-seg"), tlDay = $("#tl-day"), tlWeek = $("#tl-week"), tlSub = $("#tl-sub");
+  function setView(v){
+    $all("button", seg).forEach(function(b){
+      b.classList.toggle("active", b.dataset.view === v);
+    });
+    tlDay.classList.toggle("active", v === "day");
+    tlWeek.classList.toggle("active", v === "week");
+    var label;
+    if(v === "day"){
+      label = ((DATA.today && DATA.today.label) ? DATA.today.label : "今日") + " · 日视图";
+    } else {
+      var wk = (DATA.timeline && DATA.timeline.week) || [];
+      var a = wk[0] && wk[0].date;
+      var b = wk[wk.length-1] && wk[wk.length-1].date;
+      label = (fmtRangeLabel(a, b) || "本周") + " · 周视图";
+    }
+    tlSub.textContent = label;
+    save({view: v});
+  }
+  seg.addEventListener("click", function(e){
+    var b = e.target.closest("button[data-view]");
+    if(b) setView(b.dataset.view);
+  });
+
+  /* —— 勾选完成态 —— */
+  function bindToggle(box){
+    var card = box.closest(".focus-card,.q-card");
+    function toggle(){
+      var on = box.classList.toggle("on");
+      box.setAttribute("aria-checked", on ? "true" : "false");
+      if(card) card.classList.toggle("done", on);
+      saveDone();
+    }
+    box.addEventListener("click", function(e){ e.preventDefault(); toggle(); });
+    box.addEventListener("keydown", function(e){
+      if(e.key === " " || e.key === "Enter"){ e.preventDefault(); toggle(); }
+    });
+  }
+  function bindAllToggles(){
+    $all(".cbox[role=checkbox]").forEach(bindToggle);
+  }
+
+  /* —— 新建任务（仅本地，不同步）—— */
+  var addBtn = $("#add-btn"), addRow = $("#add-row"), addInput = $("#add-input"), addCancel = $("#add-cancel");
+  function openAdd(){ addRow.classList.add("show"); addInput.focus(); }
+  function closeAdd(){ addRow.classList.remove("show"); addInput.value = ""; }
+  addBtn.addEventListener("click", openAdd);
+  addCancel.addEventListener("click", closeAdd);
+  addInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter" && addInput.value.trim()){
+      var id = "local-" + Date.now();
+      var card = document.createElement("article");
+      card.className = "focus-card";
+      card.setAttribute("data-od-id", id);
+      card.innerHTML =
+        '<div class="focus-top">'+
+          '<span class="catdot" style="background:var(--muted)"></span>'+
+          '<span class="time">待定</span>'+
+          '<span class="badge badge-low">新建</span>'+
+        '</div>'+
+        '<div class="focus-title"></div>'+
+        '<div class="focus-foot">'+
+          '<span class="cbox" role="checkbox" tabindex="0"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span>'+
+          '<span>本地新建 · 不会同步</span>'+
+        '</div>';
+      card.querySelector(".focus-title").textContent = addInput.value.trim();
+      $("#focus-body").prepend(card);
+      bindToggle(card.querySelector(".cbox"));
+      closeAdd();
+    }
+    if(e.key === "Escape") closeAdd();
+  });
+
+  /* —— 四象限拖拽 —— */
+  var dragCard = null;
+  function bindMatrix(){
+    $all(".q-card").forEach(function(card){
+      card.addEventListener("dragstart", function(){
+        dragCard = card;
+        setTimeout(function(){ card.classList.add("dragging"); }, 0);
+      });
+      card.addEventListener("dragend", function(){
+        card.classList.remove("dragging");
+        dragCard = null;
+        $all(".q-cell").forEach(function(c){ c.classList.remove("drop-over"); });
+      });
+    });
+    $all(".q-cell").forEach(function(cell){
+      cell.addEventListener("dragover", function(e){ e.preventDefault(); cell.classList.add("drop-over"); });
+      cell.addEventListener("dragleave", function(){ cell.classList.remove("drop-over"); });
+      cell.addEventListener("drop", function(e){
+        e.preventDefault();
+        cell.classList.remove("drop-over");
+        if(dragCard){
+          var list = $(".q-list", cell);
+          if(list) list.appendChild(dragCard);
+        }
+      });
+    });
+  }
+
+  /* —— 快捷键 —— */
+  document.addEventListener("keydown", function(e){
+    var t = e.target;
+    if(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if(e.key === "n" || e.key === "N"){ e.preventDefault(); openAdd(); }
+    else if(e.key === "d" || e.key === "D"){ setView("day"); }
+    else if(e.key === "w" || e.key === "W"){ setView("week"); }
+  });
+
+  /* ========================================================
+     localStorage 持久化（doneIds 引用 data-od-id）
+     ======================================================== */
+  function save(partial){
+    try{
+      var s = JSON.parse(localStorage.getItem(STORE) || "{}");
+      Object.assign(s, partial);
+      localStorage.setItem(STORE, JSON.stringify(s));
+    }catch(_){}
+  }
+  function saveDone(){
+    var done = $all(".focus-card.done,.q-card.done").map(function(c){
+      return c.getAttribute("data-od-id");
+    }).filter(Boolean);
+    save({doneIds: done});
+  }
+
+  /* —— 交互绑定（render 后）—— */
+  bindAllToggles();
+  bindMatrix();
+
+  /* —— 恢复持久化状态 —— */
+  try{
+    var s = JSON.parse(localStorage.getItem(STORE) || "{}");
+    if(s.view) setView(s.view);
+    if(Array.isArray(s.doneIds)){
+      s.doneIds.forEach(function(id){
+        if(!id) return;
+        var el = document.querySelector('[data-od-id="'+CSS.escape(id)+'"]');
+        if(el){
+          var b = el.querySelector(".cbox");
+          if(b && !b.classList.contains("on")) b.click();
+        }
+      });
+    }
+  }catch(_){}
+
+  /* —— 每分钟刷新现在线 —— */
+  setInterval(renderNowLine, 60 * 1000);
+
+})();
+</script>
+</body>
+</html>

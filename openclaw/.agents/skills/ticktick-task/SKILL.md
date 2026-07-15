@@ -1,6 +1,11 @@
 ---
 name: ticktick-task
-description: "Use when creating, managing, or querying TickTick tasks. Supports natural language date parsing, notification text extraction, batch creation, and smart project routing via dynamic config. Works with TickTick MCP tools."
+description: |
+  滴答清单（TickTick）任务管理。当用户要求创建/添加/查询/完成/更新/删除滴答清单任务、
+  转发通知文本转为任务、问"我有什么待办""今天到期什么"、或说"提醒我…""帮我记一下…"
+  时使用。通过 dida365 MCP 工具自动去重、中英文日期解析、按截止日智能分配优先级。
+  也支持可视化：说"生成看板/任务看板"或 `/task-dashboard` 生成日程仪表盘（三套皮肤），
+  说"生成周报"或 `/week-report` 生成本周周报——均从 TickTick 拉数据注入 HTML 模板。
 ---
 
 # TickTick Task Management
@@ -14,6 +19,8 @@ Fast, smart task creation and management for TickTick (滴答清单) via MCP too
 - User asks "what are my todos" or "what's due today"
 - User says "remind me to..." or "帮我记一下..."
 - User wants to update, complete, or delete TickTick tasks
+- User says "生成看板" / "任务看板" / `/task-dashboard` → render the dashboard (ask which skin)
+- User says "生成周报" / `/week-report` → render the weekly report
 
 ## MCP Setup
 
@@ -72,7 +79,7 @@ On first invocation, if no project config exists:
 User input
   → Parse: title (required), content, dates, priority
   → Resolve project (user-specified → notification source → default)
-  → Dedup: search(title) first
+  → Dedup: filter_tasks(status:[0]) + 标题比对（search 不可靠，见 Tool Usage Guide）
   → Create: single task OR batch (3+ items)
   → Confirm: one-line summary
 
@@ -146,6 +153,8 @@ When user forwards notification/announcement text:
 ## Tool Usage Guide
 
 > Tool names below are the server's real names (see `references/ticktick-mcp-tools-reference.md`). The server does NOT provide `get_engaged_tasks` / `search_tasks` / `mcp_ticktick_*` — those are fictional. Task creation uses a `task` object with `title` + `projectId` (+ optional `content`, `dueDate`, `startDate`, `priority`, `tags`).
+>
+> **⚠ 去重别用 `search`**：`search` / `search_task` 在 dida365 MCP 服务端经常返回 `[]`（即使任务确实存在；2026-07 实测对「技能自测」「党员」「六级考试」及完整标题均返回空）。**去重、按标题定位一律用 `filter_tasks(filter={"status":[0]})` 拉全量未完成，再在客户端按标题比对**（归一化：去首尾空格 + 合并连续空格 + 忽略大小写）。
 
 ### Create
 
@@ -162,7 +171,7 @@ When user forwards notification/announcement text:
 | `list_undone_tasks_by_time_query(query_command="next7day")` | Undone tasks due within 7 days |
 | `list_undone_tasks_by_date(search={"startDate":..., "endDate":...})` | Undone tasks in a date range (max 14 days) |
 | `filter_tasks(filter={"priority":[5], "status":[0]})` | Structured filter (priority/status/tag/project) |
-| `search(query="...")` | Keyword search — **use this for dedup** |
+| `search` / `search_task` | ⚠ **不可靠**：本服务端常返回空，**不要用于去重**。按标题查找改用 `filter_tasks` + 客户端比对 |
 | `get_project_with_undone_tasks(project_id)` | Undone tasks in a project |
 
 ### Modify
@@ -173,7 +182,7 @@ When user forwards notification/announcement text:
 
 ## Common Pitfalls
 
-1. **Always dedup first** — Call `search(query=title)` before creating. Duplicate tasks from repeated runs are the #1 issue.
+1. **Always dedup first — 用 `filter_tasks`，不要用 `search`** — 创建前先 `filter_tasks(filter={"status":[0]})` 拉全部未完成，在客户端按标题比对（去空格、忽略大小写）。`search`/`search_task` 在本服务端常返回空，不可靠。重复创建是头号问题。
 2. **Date format must be ISO 8601 with timezone** — `2026-05-20T10:00:00+0800`, not `2026-05-20T10:00:00Z` unless user is in UTC.
 3. **Don't fabricate dates** — If the user doesn't mention a date, leave it empty. Don't guess.
 4. **project_id from config, never hardcode** — Always resolve through config.json or `get_projects()`. Project IDs differ per account.
@@ -185,7 +194,7 @@ When user forwards notification/announcement text:
 ### Update Operations
 
 When the user asks to update an existing task (e.g., change due date, title, or priority):
-1. **Search first**: Call `search(query=title)` to locate the task (required for dedup and to get the task_id).
+1. **Find the task via `filter_tasks`**（不要用 `search`，见 Common Pitfalls #1）：`filter_tasks(filter={"status":[0]})`（或按 project/tag 收窄）拉任务，按标题比对拿到 `task_id` 与 `projectId`。
 2. **Update**: Use `update_task(task_id, task={"projectId":..., <only changed fields>})` with the found task_id.
 3. **Confirm**: Provide a one-line summary of the update.
 
@@ -193,7 +202,7 @@ Note: For update operations, set `dedup_searched: true` in the output block.
 
 ### Dedup Skip Behavior
 
-When `search` finds a duplicate and the agent decides to skip creation:
+When dedup（`filter_tasks` + 标题比对）finds a duplicate and the agent decides to skip creation:
 - `action`: `dedup_skip`
 - `title`: Set to the **intended task title** (the name the user gave or that would have been created).
 - `priority`: Set to the priority that **would have been assigned** (e.g. `0` for an undated memo).
@@ -202,6 +211,47 @@ When `search` finds a duplicate and the agent decides to skip creation:
 - `dedup_searched`: Always `true`.
 
 This ensures the output block reports what was intentionally skipped.
+
+## Response Format
+
+After creation, confirm concisely:
+
+```
+已添加到滴答清单 [项目名]：
+- 任务标题 | 截止: 5/20 23:59 | 优先级: 高
+```
+
+## Visualization（看板 / 周报）
+
+把 TickTick 数据渲染成自包含 HTML，浏览器打开。**只读快照**——页面里的拖拽/勾选/新建都是本地预览，不同步回滴答；要真正改任务回对话说，再「刷新看板/周报」重生成。
+
+**权威契约**：`references/visualization-reference.md`（完整 DATA schema、TickTick→视觉映射、渲染流程、模板改造约定）。模板在 `scripts/templates/`：`kanban-colorful.html` / `kanban-claude.html` / `kanban-notion.html` / `weekly-report.html`。下面只给要领，细节看参考文档。
+
+### 看板（"生成看板" / `/task-dashboard`）
+
+1. **问皮肤**（除非用户已指定）：彩色 Colorful / 暖纸 Claude / 纯白 Notion。
+2. **拉数据**：`filter_tasks(filter={"status":[0]})` 全量未完成 + `list_projects`（项目名/色）+ 今日 `list_completed_tasks_by_date`（算 completedToday）。
+3. **拼 DATA**：按参考文档 §3 算 `today / stats / categories / calendar / focus / timeline / matrix`。关键映射：
+   - 四象限：`重要=priority≥3`、`紧急=已过期或今/明天到期` → do / plan / delegate / eliminate。
+   - 时间轴：带时刻的任务进 events；**全天任务也进**，放 day 顶部 all-day 横栏 + week 当天列 chip。
+   - 今日焦点：过期→今日→高优先，取 ≤4。
+4. **注入**：读 `scripts/templates/kanban-<theme>.html`，把 `INJECT_DATA_HERE` 替换成 JSON 字面量。
+5. **写出打开**：写到临时 HTML 文件，用默认浏览器打开（macOS `open`、Windows `start`、Linux `xdg-open`）。
+6. 提醒用户：改任务回对话说，再说"刷新看板"重生成。
+
+### 周报（"生成周报" / `/week-report`）
+
+1. **拉数据**：本周完成 `list_completed_tasks_by_date(本周一~今天)` + 下周到期 `list_undone_tasks_by_date(明天~下周日)` + 全量筛过期 + `list_projects`。
+2. **草拟文案**（agent 生成、需用户确认的草稿，先贴出来再注入）：
+   - `lede` 一句话总结、`top3` 下周重点、`typeBreakdown` 按任务语义归类（功能/Bug/评审…，不依赖标签）。
+3. **拼 DATA.report** → 注入 `weekly-report.html` → 写临时文件 → 打开。
+4. 提醒：文案可继续改，改完重新生成。
+
+### 注意
+
+- **创建时间可用**：MCP 任务对象带 `createdTime`（ISO `+0000`），需要"本周新增"可按它筛；当前类型分布仍走 agent 语义归类（设计选择，非数据缺口）。
+- **Token 过期**：渲染前的 MCP 调用若 401，按上面 MCP Setup 的 Token expiry 重新登录。
+- **时区**：所有时间 Asia/Shanghai，ISO 8601 带偏移；相对日期（本周一、下周日）agent 换算成绝对值注入，模板不算。
 
 ## Common Scenarios
 
@@ -213,17 +263,6 @@ This ensures the output block reports what was intentionally skipped.
 | "把这条加到滴答清单" + text | Apply notification parsing template |
 | "我有什么待办" | `list_undone_tasks_by_time_query("today")` + `list_undone_tasks_by_time_query("tomorrow")` |
 
-## Response Format
-
-After creation, confirm concisely:
-
-```
-已添加到滴答清单 [项目名]：
-- 任务标题 | 截止: 5/20 23:59 | 优先级: 高
-```
-
-Batch creation: list all tasks.
-
 ## Verification Checklist
 
 After creating a task, verify:
@@ -231,5 +270,5 @@ After creating a task, verify:
 - [ ] Due date matches user intent (not fabricated)
 - [ ] Priority aligns with urgency rules above
 - [ ] Project matches routing logic
-- [ ] No duplicate exists (search returned empty)
+- [ ] No duplicate exists（`filter_tasks(status:[0])` + 标题比对已查；`search` 不可靠，别用）
 - [ ] Response format is the one-line confirmation

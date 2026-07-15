@@ -29,8 +29,10 @@ these exact names — older names like `get_engaged_tasks` / `search_tasks` /
 | `list_undone_tasks_by_date` | `search.startDate`, `search.endDate` (ISO 8601), optional `search.projectIds` | Undone tasks in a date range (max 14 days). |
 | `list_completed_tasks_by_date` | `search.startDate`, `search.endDate`, optional `search.projectIds` | Completed tasks in a range. |
 | `filter_tasks` | `filter` (object: optional `startDate`/`endDate`/`projectIds`/`priority`/`status`/`tag`/`kind`) | Structured filter. `priority` is an array of 0/1/3/5. |
-| `search` | `query` | Tasks matching a keyword (best for dedup). |
-| `search_task` | `query` | Same, returns taskId/title/url. |
+| `search` | `query` | ⚠ **不可靠**：本服务端常返回空数组，**不要用于去重或按标题定位**。 |
+| `search_task` | `query` | 同上，返回 taskId/title/url——同样不可靠。 |
+
+> **⚠ `search` / `search_task` 实测不可靠**（2026-07）：对「技能自测」「党员」「六级考试」及完整任务标题均返回 `[]`，即使任务确实存在。**去重、按标题查找一律改用** `filter_tasks(filter={"status":[0]})` 拉全量未完成，再在客户端按标题比对（归一化：trim + collapse whitespace + case-insensitive）。`filter_tasks` / `list_undone_tasks_*` / `list_completed_tasks_by_date` 均正常。
 
 > The server does **not** provide `get_engaged_tasks`, `get_next_tasks`,
 > `get_tasks_due_today`, `get_overdue_tasks`, or `get_tasks_due_this_week`.

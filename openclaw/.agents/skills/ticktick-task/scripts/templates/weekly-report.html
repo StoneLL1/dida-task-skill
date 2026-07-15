@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>周报 · Weekly Bulletin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ===========================================================
+     Cobalt Grid · 周报单面版
+     电光钴蓝斜体衬线 + 米纸网格 + 发丝线 + 像素故障装饰
+     （参考 Cobalt Grid 气质，单面版式，非 PPT 形式）
+     =========================================================== */
+  :root{
+    --paper:#f3efe3;
+    --paper-band:#efe9da;
+    --ink:#16140c;
+    --ink-2:#5d5644;
+    --rule:rgba(22,20,12,0.16);
+    --rule-strong:rgba(22,20,12,0.32);
+    --cobalt:#1f45e6;
+    --cobalt-deep:#1332b0;
+    --grid-minor:rgba(31,69,230,0.045);
+    --grid-major:rgba(31,69,230,0.085);
+    --f-serif:'Newsreader',Georgia,serif;
+    --f-cjk-serif:'Noto Serif SC',Georgia,serif;
+    --f-sans:'Inter',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+    --f-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid-minor) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-minor) 1px,transparent 1px),
+      linear-gradient(var(--grid-major) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-major) 1px,transparent 1px);
+    background-size:26px 26px,26px 26px,130px 130px,130px 130px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:var(--f-sans);
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:clamp(22px,4vw,58px) clamp(18px,5vw,68px) 96px;
+  }
+  .sheet{max-width:1180px;margin:0 auto;position:relative}
+
+  /* —— 四角像素框 —— */
+  .corner{position:absolute;width:22px;height:22px;color:var(--cobalt);pointer-events:none}
+  .corner.tl{top:-12px;left:-12px}
+  .corner.tr{top:-12px;right:-12px;transform:rotate(90deg)}
+  .corner.bl{bottom:-12px;left:-12px;transform:rotate(-90deg)}
+  .corner.br{bottom:-12px;right:-12px;transform:rotate(180deg)}
+
+  /* —— 工具条（打印） —— */
+  .tools{position:fixed;top:18px;right:18px;z-index:60}
+  .btn{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    background:var(--ink);color:var(--paper);border:none;padding:10px 15px;cursor:pointer;transition:background .15s}
+  .btn:hover{background:var(--cobalt)}
+
+  /* —— 刊头 —— */
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap;padding-bottom:6px}
+  .eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-2)}
+  .eyebrow b{color:var(--cobalt);font-weight:500}
+  .title{font-family:var(--f-cjk-serif);font-weight:700;font-size:clamp(60px,9vw,116px);line-height:.92;color:var(--cobalt);letter-spacing:.04em;margin-top:8px}
+  .tagline{font-family:var(--f-serif);font-style:italic;font-weight:500;font-size:clamp(20px,2vw,30px);color:var(--cobalt-deep);margin-top:2px;letter-spacing:.01em}
+  .meta{text-align:right;font-family:var(--f-mono);font-size:12.5px;line-height:1.95;color:var(--ink-2);letter-spacing:.05em}
+  .meta .issue{color:var(--cobalt);font-weight:500;letter-spacing:.22em}
+  .meta b{color:var(--ink);font-weight:500}
+
+  .rulebar{position:relative;border-top:3px solid var(--cobalt);margin-top:14px}
+  .rulebar::after{content:"";display:block;border-top:1px solid var(--rule-strong);margin-top:5px}
+  .rule-glitch{position:absolute;right:0;top:-10px;color:var(--cobalt)}
+
+  /* —— 区块通用 —— */
+  .section{padding:clamp(30px,3.2vw,46px) 0;border-top:1px solid var(--rule)}
+  .section.first{border-top:none;padding-top:clamp(26px,3vw,38px)}
+  .s-head{display:flex;align-items:baseline;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+  .s-num{font-family:var(--f-mono);font-size:13px;color:var(--cobalt);letter-spacing:.18em;font-weight:500}
+  .s-title{font-family:var(--f-cjk-serif);font-weight:600;font-size:clamp(22px,2.2vw,30px);color:var(--ink);letter-spacing:.02em}
+  .s-title .en{font-family:var(--f-serif);font-style:italic;font-weight:400;color:var(--cobalt);font-size:.72em;margin-left:.4em}
+  .s-line{flex:1;height:1px;background:var(--rule);transform:translateY(-5px);min-width:24px}
+  .s-hint{font-family:var(--f-mono);font-size:11px;color:var(--ink-2);letter-spacing:.08em}
+
+  /* —— 核心指标卡 —— */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong)}
+  .metric{padding:24px 26px;border-right:1px solid var(--rule);position:relative}
+  .metric:last-child{border-right:none}
+  .m-label{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+  .m-label .en{display:block;color:var(--cobalt);font-size:10px;margin-top:3px;letter-spacing:.22em}
+  .m-num{font-family:var(--f-mono);font-weight:500;font-size:clamp(46px,5.4vw,76px);line-height:1;color:var(--ink);margin-top:16px;font-variant-numeric:tabular-nums}
+  .metric.blocked .m-num{color:var(--cobalt)}
+  .m-delta{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);margin-top:12px;letter-spacing:.04em}
+  .m-delta.up{color:var(--cobalt)}
+  .m-delta.warn{color:var(--cobalt);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+
+  /* —— 一句话总结 —— */
+  .lede{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;padding:4px 0}
+  .qmark{font-family:var(--f-serif);font-style:italic;font-weight:500;font-size:96px;line-height:.62;color:var(--cobalt)}
+  .lede blockquote{font-family:var(--f-cjk-serif);font-weight:500;font-size:clamp(23px,2.45vw,37px);line-height:1.42;color:var(--ink);border-left:3px solid var(--cobalt);padding:4px 0 4px 22px}
+  .lede blockquote em{font-family:var(--f-serif);font-style:italic;color:var(--cobalt-deep);font-weight:500}
+  .lede blockquote strong{color:var(--cobalt);font-weight:600}
+
+  /* —— 任务类型分布 —— */
+  .type-wrap{border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong);padding:4px 0}
+  .type-row{display:grid;grid-template-columns:30px minmax(140px,1.1fr) minmax(180px,2.4fr) 72px;align-items:center;gap:20px;padding:16px 4px;border-bottom:1px solid var(--rule)}
+  .type-row:last-child{border-bottom:none}
+  .type-rank{font-family:var(--f-mono);font-size:13px;color:var(--cobalt);font-weight:500;letter-spacing:.04em}
+  .type-name{font-size:16px;color:var(--ink);font-weight:500;line-height:1.25}
+  .type-name .en{display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-2);font-weight:400;margin-top:3px}
+  .type-track{position:relative;height:14px;background:rgba(22,20,12,0.07)}
+  .type-track i{position:absolute;left:0;top:0;bottom:0;background:var(--cobalt)}
+  .type-count{font-family:var(--f-mono);font-size:28px;font-weight:500;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;line-height:1}
+  .type-count small{font-size:12px;color:var(--ink-2);font-weight:400;margin-left:3px}
+  .type-foot{display:flex;justify-content:space-between;align-items:baseline;padding:15px 4px 2px;font-family:var(--f-mono);font-size:12px;color:var(--ink-2);letter-spacing:.06em}
+  .type-foot b{color:var(--cobalt);font-weight:500;font-size:14px}
+  @media(max-width:680px){
+    .type-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+    .type-name{flex:1 1 55%}
+    .type-count{font-size:24px}
+    .type-track{flex:1 1 100%;order:9;margin-top:4px}
+  }
+
+  /* —— 清单（完成 / 过期 / 到期），与任务类型同构 —— */
+  .rpt-list{border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong);padding:4px 0}
+  .rpt-row{display:grid;grid-template-columns:14px 1fr auto;align-items:baseline;gap:16px;padding:13px 4px;border-bottom:1px solid var(--rule);break-inside:avoid}
+  .rpt-row:last-child{border-bottom:none}
+  .rpt-dot{width:8px;height:8px;border-radius:50%;background:var(--cobalt);align-self:center}
+  .rpt-title{font-size:15.5px;color:var(--ink);font-weight:500;line-height:1.35;word-break:break-word}
+  .rpt-sub{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin-right:8px}
+  .rpt-meta{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);letter-spacing:.04em;white-space:nowrap}
+  .rpt-row.warn .rpt-meta{color:var(--cobalt);font-weight:500}
+  @media(max-width:680px){
+    .rpt-row{grid-template-columns:10px 1fr;gap:8px 12px}
+    .rpt-meta{grid-column:2;font-size:11px}
+  }
+
+  /* —— 下周 Top 3 —— */
+  .top3{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--rule)}
+  .t3-item{padding:8px 28px 8px 0;border-right:1px solid var(--rule);position:relative}
+  .t3-item:last-child{border-right:none;padding-right:0}
+  .t3-item:not(:first-child){padding-left:28px}
+  .t3-no{font-family:var(--f-mono);font-size:clamp(40px,4vw,58px);line-height:1;color:var(--cobalt);font-weight:500}
+  .t3-title{font-family:var(--f-cjk-serif);font-weight:600;font-size:clamp(19px,1.7vw,24px);color:var(--ink);margin:14px 0 8px;line-height:1.32}
+  .t3-plan{font-size:14.5px;color:var(--ink-2);line-height:1.6}
+
+  /* —— 页脚 —— */
+  .footer{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-top:10px;padding-top:20px;border-top:3px solid var(--cobalt)}
+  .footer .end{font-family:var(--f-mono);font-size:12px;letter-spacing:.24em;color:var(--cobalt);font-weight:500}
+  .footer .sig{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);letter-spacing:.06em}
+  .footer .sig b{color:var(--ink);font-weight:500}
+  .footer .next{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);letter-spacing:.06em}
+
+  /* —— 响应式 —— */
+  @media(max-width:760px){
+    .metrics{grid-template-columns:1fr 1fr}
+    .metric:nth-child(2){border-right:none}
+    .metric:nth-child(1),.metric:nth-child(2){border-bottom:1px solid var(--rule)}
+    .top3{grid-template-columns:1fr}
+    .t3-item{border-right:none;border-bottom:1px solid var(--rule);padding:22px 0!important}
+    .t3-item:last-child{border-bottom:none}
+    .lede{grid-template-columns:1fr}
+    .qmark{line-height:1;margin-bottom:-10px}
+    .meta{text-align:left}
+  }
+
+  /* —— 打印：压一页（典型周一页 A4；重载周自然溢出，行不劈裂）—— */
+  @media print{
+    @page{size:A4;margin:10mm}
+    html,body{background:#fff!important;background-image:none!important}
+    body{padding:0;font-size:11.5px;line-height:1.4}
+    .tools,.corner,.preview-banner{display:none!important}
+    .sheet{max-width:none}
+
+    /* 刊头收紧 */
+    .masthead{padding-bottom:2px;gap:14px}
+    .title{font-size:32px;margin-top:2px}
+    .tagline{font-size:13px;margin-top:0}
+    .meta{font-size:10.5px;line-height:1.5}
+    .rulebar{margin-top:4px}
+    .rulebar::after{margin-top:3px}
+
+    /* 短区块不劈裂；长清单允许跨页（行级 break-inside:avoid 已在 .rpt-row）*/
+    .metrics,.type-wrap,.top3,.lede,.rulebar,.footer,.s-head{break-inside:avoid}
+
+    /* 指标卡收紧 */
+    .metric{padding:6px 10px}
+    .m-num{font-size:26px;margin-top:2px}
+    .m-label{font-size:9.5px}
+    .m-label .en{font-size:8.5px;margin-top:1px}
+    .m-delta{font-size:10px;margin-top:2px}
+
+    /* 区块通用收紧 */
+    .section{padding:8px 0}
+    .section.first{padding-top:4px}
+    .s-head{margin-bottom:6px;gap:10px}
+    .s-title{font-size:15px}
+    .s-num{font-size:10.5px}
+    .s-hint{font-size:9.5px}
+
+    /* 导语收紧 */
+    .lede{gap:14px}
+    .qmark{font-size:44px;line-height:.7}
+    .lede blockquote{font-size:13px;line-height:1.38;padding:2px 0 2px 10px;border-left-width:2px}
+
+    /* 类型分布收紧 */
+    .type-row{padding:4px 2px;gap:12px}
+    .type-name{font-size:12.5px}
+    .type-name .en{font-size:9px;margin-top:1px}
+    .type-count{font-size:18px}
+    .type-count small{font-size:10px}
+    .type-foot{padding:5px 2px 0;font-size:10px}
+    .type-foot b{font-size:11.5px}
+
+    /* Top3 收紧 */
+    .t3-item{padding:8px 12px}
+    .t3-no{font-size:28px}
+    .t3-title{font-size:13px;margin:4px 0 2px;line-height:1.25}
+    .t3-plan{font-size:11.5px;line-height:1.45}
+
+    /* 清单收紧；完成/到期双栏（过期单栏强调）*/
+    .rpt-list{padding:2px 0}
+    .rpt-row{padding:4px 2px;gap:10px}
+    .rpt-title{font-size:12px;line-height:1.3}
+    .rpt-sub{font-size:9px;margin-right:6px}
+    .rpt-meta{font-size:10px}
+    #rpt-completed,#rpt-upcoming{column-count:2;column-gap:20px}
+    #rpt-completed .rpt-row,#rpt-upcoming .rpt-row{break-inside:avoid}
+
+    /* 页脚收紧 */
+    .footer{padding-top:8px}
+    .footer .end,.footer .sig,.footer .next{font-size:10px}
+  }
+
+  /* === injected === */
+  /* —— 预览横幅 —— */
+  .preview-banner{
+    max-width:1180px;
+    margin:0 auto 22px;
+    background:var(--paper-band);
+    border:1px solid var(--cobalt);
+    border-left-width:3px;
+    color:var(--cobalt-deep);
+    font-family:var(--f-mono);
+    font-size:12px;
+    letter-spacing:.05em;
+    padding:10px 16px;
+    text-align:center;
+    line-height:1.5;
+  }
+  @media print{ .preview-banner{display:none!important} }
+
+  /* —— 空状态 —— */
+  .empty-state{
+    font-family:var(--f-mono);
+    font-size:13px;
+    color:var(--ink-2);
+    letter-spacing:.08em;
+    padding:28px 4px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+  <div class="preview-banner" role="note">⚠ 本地预览 · 此周报由 agent 草拟，文案请回对话修改后重新生成</div>
+
+  <div class="tools">
+    <button class="btn" id="print-btn" type="button">打印 / 导出 PDF</button>
+  </div>
+
+  <main class="sheet">
+    <!-- 四角像素框 -->
+    <svg class="corner tl" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="10" height="1.7" fill="currentColor"/><rect x="0" y="0" width="1.7" height="10" fill="currentColor"/></svg>
+    <svg class="corner tr" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="10" height="1.7" fill="currentColor"/><rect x="0" y="0" width="1.7" height="10" fill="currentColor"/></svg>
+    <svg class="corner bl" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="10" height="1.7" fill="currentColor"/><rect x="0" y="0" width="1.7" height="10" fill="currentColor"/></svg>
+    <svg class="corner br" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="10" height="1.7" fill="currentColor"/><rect x="0" y="0" width="1.7" height="10" fill="currentColor"/></svg>
+
+    <!-- 刊头 -->
+    <header class="masthead">
+      <div>
+        <div class="eyebrow" id="mast-eyebrow"></div>
+        <h1 class="title">周报</h1>
+        <div class="tagline" id="mast-tagline"></div>
+      </div>
+      <div class="meta" id="mast-meta"></div>
+    </header>
+    <div class="rulebar">
+      <svg class="rule-glitch" viewBox="0 0 8 4" width="34" height="17" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="0" y="3" width="1" height="1" fill="currentColor"/><rect x="1" y="2" width="1" height="1" fill="currentColor"/>
+        <rect x="2" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="1" width="1" height="1" fill="currentColor"/>
+        <rect x="4" y="1" width="1" height="1" fill="currentColor"/><rect x="5" y="0" width="1" height="1" fill="currentColor"/>
+        <rect x="7" y="3" width="1" height="1" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <!-- 1 · 核心指标卡 -->
+    <section class="section first">
+      <div class="s-head">
+        <span class="s-num">01 ／</span>
+        <h2 class="s-title">核心指标<span class="en">Core Metrics</span></h2>
+        <span class="s-line"></span>
+        <span class="s-hint">本周 vs 上周</span>
+      </div>
+      <div class="metrics" id="metrics"></div>
+    </section>
+
+    <!-- 2 · 一句话总结 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">02 ／</span>
+        <h2 class="s-title">一句话总结<span class="en">In One Line</span></h2>
+        <span class="s-line"></span>
+      </div>
+      <div class="lede">
+        <div class="qmark" aria-hidden="true">“</div>
+        <blockquote id="lede-blockquote"></blockquote>
+      </div>
+    </section>
+
+    <!-- 3 · 任务类型 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">03 ／</span>
+        <h2 class="s-title">任务类型<span class="en">Task Breakdown</span></h2>
+        <span class="s-line"></span>
+        <span class="s-hint">本周完成 · 按类型分布</span>
+      </div>
+      <div class="type-wrap" id="type-wrap"></div>
+    </section>
+
+    <!-- 4 · 下周 Top 3 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">04 ／</span>
+        <h2 class="s-title">下周 Top 3<span class="en">Next Week</span></h2>
+        <span class="s-line"></span>
+      </div>
+      <div class="top3" id="top3"></div>
+    </section>
+
+    <!-- 5 · 本周完成清单 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">05 ／</span>
+        <h2 class="s-title">本周完成<span class="en">Done This Week</span></h2>
+        <span class="s-line"></span>
+        <span class="s-hint">按完成时间</span>
+      </div>
+      <div class="rpt-list" id="rpt-completed"></div>
+    </section>
+
+    <!-- 6 · 过期 / 阻塞 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">06 ／</span>
+        <h2 class="s-title">过期阻塞<span class="en">Overdue</span></h2>
+        <span class="s-line"></span>
+        <span class="s-hint">需尽快处理</span>
+      </div>
+      <div class="rpt-list" id="rpt-overdue"></div>
+    </section>
+
+    <!-- 7 · 下周到期待办 -->
+    <section class="section">
+      <div class="s-head">
+        <span class="s-num">07 ／</span>
+        <h2 class="s-title">下周到期<span class="en">Upcoming</span></h2>
+        <span class="s-line"></span>
+        <span class="s-hint">未完成 · 按到期日</span>
+      </div>
+      <div class="rpt-list" id="rpt-upcoming"></div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer" id="report-footer"></footer>
+  </main>
+
+  <script>const DATA = INJECT_DATA_HERE;</script>
+  <script>
+    // ============================================================
+    // 渲染层：只读 DATA，重建各区域。打印按钮保持原交互。
+    // ============================================================
+    function esc(s){
+      return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+    // 极简 markdown：**bold** / *italic*（lede 用）
+    function formatInline(s){
+      var t = esc(s);
+      t = t.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+      t = t.replace(/\*([^*]+)\*/g,'<em>$1</em>');
+      return t;
+    }
+    // 解析 YYYY-MM-DD 前缀为本地 Date
+    function parseISODate(s){
+      if(!s) return null;
+      var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s));
+      if(!m) return null;
+      return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10));
+    }
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function formatMD(d){ return pad2(d.getMonth()+1) + '.' + pad2(d.getDate()); }
+    function formatYMD(d){ return d.getFullYear() + '.' + pad2(d.getMonth()+1) + '.' + pad2(d.getDate()); }
+
+    function render(DATA){
+      DATA = DATA || {};
+      var report = DATA.report || {};
+      var user   = DATA.user || '个人';
+
+      var issue     = report.issue;
+      var issueStr  = (issue==null || issue==='') ? '' : String(issue);
+      var rangeLabel= report.rangeLabel || '';
+      var rangeEnd  = report.rangeEnd || '';
+      var submitter = report.submitter || user;
+
+      // 下期日期 = rangeEnd + 7 天（仅日期，不算时区）
+      var nextIssueDate = '';
+      var endD = parseISODate(rangeEnd);
+      if(endD){
+        var nd = new Date(endD.getTime());
+        nd.setDate(nd.getDate()+7);
+        nextIssueDate = formatMD(nd);
+      }
+      var endLabel = endD ? formatYMD(endD) : rangeEnd;
+
+      // —— 刊头 ——
+      document.querySelector('#mast-eyebrow').innerHTML =
+        '<b>WEEKLY REPORT</b> ／ ' + esc(user);
+      document.querySelector('#mast-tagline').textContent =
+        'Weekly Bulletin · 第 ' + (issueStr || '—') + ' 期';
+
+      var metaHtml = '';
+      if(issueStr)
+        metaHtml += '<div class="issue">ISSUE №' + esc(issueStr) + '</div>';
+      if(rangeLabel)
+        metaHtml += '<div>' + esc(rangeLabel) + '</div>';
+      metaHtml += '<div>提交人 · <b>' + esc(submitter) + '</b></div>';
+      if(nextIssueDate)
+        metaHtml += '<div>下期 · ' + esc(nextIssueDate) + '</div>';
+      document.querySelector('#mast-meta').innerHTML = metaHtml;
+
+      // —— 核心指标 ——
+      var metricsEl = document.querySelector('#metrics');
+      var m = report.metrics || null;
+      if(!m){
+        metricsEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1">暂无</div>';
+      } else {
+        var cardDefs = [
+          {key:'done',    label:'完成任务', en:'DONE',         value:m.done,    delta:m.doneDelta,    blocked:false, suffix:''},
+          {key:'wip',     label:'进行中',   en:'IN PROGRESS',  value:m.wip,     delta:m.wipDelta,     blocked:false, suffix:''},
+          {key:'blocked', label:'阻塞项',   en:'BLOCKED',      value:m.blocked, delta:m.blockedDelta, blocked:true,  suffix:''},
+          {key:'rate',    label:'完成率',   en:'RATE',         value:m.rate,    delta:m.rateDelta,    blocked:false, suffix:'%'}
+        ];
+        metricsEl.innerHTML = cardDefs.map(function(def){
+          var numHtml;
+          if(def.value == null){
+            numHtml = '—';
+          } else if(def.suffix){
+            numHtml = esc(def.value) + '<span style="font-size:.5em">' + def.suffix + '</span>';
+          } else {
+            numHtml = esc(def.value);
+          }
+          var deltaHtml;
+          if(def.delta != null && def.delta !== ''){
+            var cls = 'm-delta';
+            var t = String(def.delta);
+            // 由符号推断 tone：▲ → up，▼ → warn
+            if(/▲/.test(t)) cls += ' up';
+            else if(/▼/.test(t)) cls += ' warn';
+            deltaHtml = '<div class="' + cls + '">' + esc(t) + '</div>';
+          } else {
+            deltaHtml = '<div class="m-delta">—</div>';
+          }
+          return '<div class="metric' + (def.blocked ? ' blocked' : '') + '" data-key="' + def.key + '">' +
+                   '<div class="m-label">' + def.label + '<span class="en">' + def.en + '</span></div>' +
+                   '<div class="m-num">' + numHtml + '</div>' +
+                   deltaHtml +
+                 '</div>';
+        }).join('');
+      }
+
+      // —— 一句话总结 ——
+      var ledeEl = document.querySelector('#lede-blockquote');
+      var lede = report.lede;
+      if(lede == null || lede === ''){
+        ledeEl.innerHTML = '<span class="empty-state">暂无</span>';
+      } else {
+        ledeEl.innerHTML = formatInline(lede);
+      }
+
+      // —— 任务类型 ——
+      var typeWrap = document.querySelector('#type-wrap');
+      var breakdown = report.typeBreakdown || [];
+      if(!breakdown.length){
+        typeWrap.innerHTML = '<div class="empty-state">暂无</div>';
+      } else {
+        var maxCount = 1;
+        breakdown.forEach(function(b){
+          if((b.count||0) > maxCount) maxCount = b.count;
+        });
+        var total = 0;
+        var rowsHtml = breakdown.map(function(b, i){
+          var rank  = pad2(i+1);
+          var name  = b.name || '';
+          var count = b.count || 0;
+          total += count;
+          var pct = (count / maxCount) * 100;
+          if(pct < 0) pct = 0; if(pct > 100) pct = 100;
+          return '<div class="type-row">' +
+                   '<span class="type-rank">' + esc(rank) + '</span>' +
+                   '<span class="type-name">' + esc(name) + '</span>' +
+                   '<span class="type-track"><i style="width:' + pct.toFixed(1) + '%"></i></span>' +
+                   '<span class="type-count">' + esc(count) + '<small>项</small></span>' +
+                 '</div>';
+        }).join('');
+        rowsHtml += '<div class="type-foot">' +
+                      '<span>本周合计完成</span>' +
+                      '<span><b>' + esc(total) + '</b> 项 · 对应核心指标「完成任务」</span>' +
+                    '</div>';
+        typeWrap.innerHTML = rowsHtml;
+      }
+
+      // —— 下周 Top 3 ——
+      var top3El = document.querySelector('#top3');
+      var top3 = report.top3 || [];
+      if(!top3.length){
+        top3El.innerHTML = '<div class="empty-state" style="grid-column:1/-1">暂无</div>';
+      } else {
+        var items = top3.slice(0, 3);
+        top3El.innerHTML = items.map(function(item, i){
+          var no    = pad2(i+1);
+          var title = item.title || '';
+          var plan  = item.plan || '';
+          return '<div class="t3-item">' +
+                   '<div class="t3-no">' + esc(no) + '</div>' +
+                   '<div class="t3-title">' + esc(title) + '</div>' +
+                   '<p class="t3-plan">' + esc(plan) + '</p>' +
+                 '</div>';
+        }).join('');
+      }
+
+      // —— 本周完成清单 ——
+      var doneEl = document.querySelector('#rpt-completed');
+      var completed = report.completed || [];
+      if(!completed.length){
+        doneEl.innerHTML = '<div class="empty-state">本周暂无完成项</div>';
+      } else {
+        doneEl.innerHTML = completed.slice(0, 50).map(function(t){
+          var dot  = t.projectColor ? '<span class="rpt-dot" style="background:' + esc(t.projectColor) + '"></span>' : '<span class="rpt-dot"></span>';
+          var proj = t.project ? '<span class="rpt-sub">' + esc(t.project) + '</span>' : '';
+          return '<div class="rpt-row">' + dot +
+                   '<div class="rpt-title">' + proj + esc(t.title || '') + '</div>' +
+                   '<div class="rpt-meta">' + esc(t.completedLabel || '') + '</div>' +
+                 '</div>';
+        }).join('');
+      }
+
+      // —— 过期 / 阻塞 ——
+      var overdueEl = document.querySelector('#rpt-overdue');
+      var overdue = report.overdue || [];
+      if(!overdue.length){
+        overdueEl.innerHTML = '<div class="empty-state">无过期项 🎉</div>';
+      } else {
+        overdueEl.innerHTML = overdue.slice(0, 50).map(function(t){
+          var dot  = t.projectColor ? '<span class="rpt-dot" style="background:' + esc(t.projectColor) + '"></span>' : '<span class="rpt-dot"></span>';
+          var proj = t.project ? '<span class="rpt-sub">' + esc(t.project) + '</span>' : '';
+          var meta = t.dueLabel || (t.overdueDays != null ? '逾期 ' + t.overdueDays + ' 天' : '');
+          return '<div class="rpt-row warn">' + dot +
+                   '<div class="rpt-title">' + proj + esc(t.title || '') + '</div>' +
+                   '<div class="rpt-meta">' + esc(meta) + '</div>' +
+                 '</div>';
+        }).join('');
+      }
+
+      // —— 下周到期待办 ——
+      var upcomingEl = document.querySelector('#rpt-upcoming');
+      var upcoming = report.upcoming || [];
+      if(!upcoming.length){
+        upcomingEl.innerHTML = '<div class="empty-state">下周暂无到期项</div>';
+      } else {
+        upcomingEl.innerHTML = upcoming.slice(0, 50).map(function(t){
+          var dot  = t.projectColor ? '<span class="rpt-dot" style="background:' + esc(t.projectColor) + '"></span>' : '<span class="rpt-dot"></span>';
+          var proj = t.project ? '<span class="rpt-sub">' + esc(t.project) + '</span>' : '';
+          return '<div class="rpt-row">' + dot +
+                   '<div class="rpt-title">' + proj + esc(t.title || '') + '</div>' +
+                   '<div class="rpt-meta">' + esc(t.dueLabel || '') + '</div>' +
+                 '</div>';
+        }).join('');
+      }
+
+      // —— 页脚 ——
+      var footerEl = document.querySelector('#report-footer');
+      var footerHtml = '';
+      if(issueStr)
+        footerHtml += '<span class="end">— END OF REPORT №' + esc(issueStr) + ' —</span>';
+      else
+        footerHtml += '<span class="end">— END OF REPORT —</span>';
+      var sigHtml = '<b>' + esc(submitter) + '</b>';
+      if(endLabel) sigHtml += ' · ' + esc(endLabel);
+      footerHtml += '<span class="sig">' + sigHtml + '</span>';
+      var nextHtml = '';
+      if(issueStr)   nextHtml += '归档 №' + esc(issueStr);
+      if(nextIssueDate) nextHtml += (nextHtml ? ' · ' : '') + '下期 ' + esc(nextIssueDate);
+      if(nextHtml)
+        footerHtml += '<span class="next">' + nextHtml + '</span>';
+      footerEl.innerHTML = footerHtml;
+
+      // —— 文档标题 ——
+      document.title = '周报 №' + (issueStr || '—') + ' · ' + user;
+    }
+
+    // 启动渲染
+    try{
+      render(typeof DATA !== 'undefined' ? DATA : {});
+    }catch(err){
+      console.error('[weekly-report] render failed:', err);
+    }
+
+    // 打印 / 导出 PDF（保留原交互）
+    document.getElementById('print-btn').addEventListener('click', function(){
+      window.print();
+    });
+  </script>
+</body>
+</html>
