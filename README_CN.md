@@ -24,7 +24,7 @@
 - **批量创建** — 3 个以上任务用 `batch_create_tasks` 一次搞定
 
 **质量护栏**
-- **自动去重** — 创建前一律 `search`；若已存在相同任务则跳过创建
+- **自动去重** — 创建前一律 `filter_tasks(status:[0])` 拉全量未完成再按标题比对（本服务端 `search` 不可靠）；若已存在相同任务则跳过创建
 - **不臆造日期** — 用户没提日期就留空，绝不乱猜
 - **智能优先级** — 按截止日期远近自动分配 `0/1/3/5`（今天/明天=高，3–7 天=中，>7 天=低）
 
@@ -32,13 +32,17 @@
 - **动态项目路由** — 不硬编码项目 ID；首次使用时自动发现项目并存入本地 `config.json`
 - **完整生命周期** — 创建、查询、更新、完成、删除，统一的工具接口
 
+**可视化**
+- **任务看板** — 说"生成看板"/"任务看板"（或 Claude Code 用 `/task-dashboard`）渲染日程仪表盘：未完成任务按截止紧迫度分桶，可切换"截止日 / 优先级 / 项目"维度。内置三套皮肤（彩色 / claude / notion）。
+- **周报** — 说"生成周报"（或 `/week-report`）生成一页 A4 周报：本周完成 / 过期阻塞 / 下周到期，从 TickTick 实时拉数据注入 HTML 模板并在浏览器打开。只读快照——要改任务回对话里说，skill 调 MCP 后重新生成即可。
+
 ## 工作原理
 
 ```
 "提醒我明天下午3点开会"
   → 解析：   title="开会", due_date=2026-06-25T15:00:00+0800, priority=5
   → 路由：   从 config.json 解析项目（默认 Inbox）
-  → 去重：   search("开会") → 无重复
+  → 去重：   filter_tasks(status:[0]) → 无标题重复
   → 创建：   create_task(task={"title":"开会", ...})
   → 确认：   "已添加到滴答清单：开会 | 截止: 明天 15:00 | 优先级: 高"
 ```
@@ -194,6 +198,8 @@ cp codex/codex.md /path/to/your/project/codex.md
 | `把这段通知加到滴答清单` + 粘贴文本 | 通知被解析为结构化任务 |
 | `我有什么待办？` | 显示高优先级与近期待办 |
 | `完成 XXX 任务` | 搜索并完成匹配的任务 |
+| `生成看板` | 在浏览器渲染任务看板（三套皮肤） |
+| `生成周报` | 在浏览器生成本周一页周报 |
 
 ## 配置说明
 
@@ -211,27 +217,52 @@ Skill 把项目映射存在本地 `config.json`。首次使用时调用 `list_pr
 
 ```
 ticktick-task-publish/
-├── README.md                                # English
-├── README_CN.md                             # 本文件
-├── hermes/                                  # Hermes Agent
-│   └── ticktick-task/
-│       ├── SKILL.md                         # Skill 定义（YAML frontmatter + 正文）
-│       ├── config.example.json
-│       └── references/ticktick-mcp-tools-reference.md
-├── openclaw/                                # OpenClaw / CLAWHUB
-│   └── .agents/skills/ticktick-task/
-│       ├── SKILL.md
-│       ├── config.example.json
-│       └── references/ticktick-mcp-tools-reference.md
-├── claude-code/                             # Claude Code
-│   ├── .claude/skills/ticktick-task.md      # Skill 指令
-│   ├── scripts/config.example.json
-│   └── references/ticktick-mcp-tools-reference.md
-└── codex/                                   # OpenAI Codex
-    ├── codex.md                             # AGENTS.md 风格指令
-    ├── scripts/config.example.json
-    └── references/ticktick-mcp-tools-reference.md
+├── README.md  /  README_CN.md
+├── src/                                    # 单一真相源（在这里改）
+│   ├── intro.md  body.md  visualization.md
+│   ├── references/                         # ticktick-mcp-tools-reference.md + visualization-reference.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   ├── commands/{task-dashboard.md, week-report.md}      # Claude Code 斜杠命令
+│   └── platforms/<plat>/                   # frontmatter.md、mcp-setup.md、tail.md、<plat>.yml
+├── scripts/
+│   ├── build.py                            # 生成器：src/ → 4 个平台目录
+│   └── bootstrap_src.py                    # 一次性脚本：从 canonical 安装推导出 src/
+├── claude-code/                            # Claude Code（生成产物）
+│   ├── .claude/skills/ticktick-task.md
+│   ├── .claude/commands/{task-dashboard,week-report}.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   └── references/{ticktick-mcp-tools-reference, visualization-reference}.md
+├── codex/                                  # OpenAI Codex（生成产物）
+│   ├── codex.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   └── references/                         # 同样两份参考文档
+├── hermes/                                 # Hermes Agent（生成产物）
+│   └── ticktick-task/{SKILL.md, scripts/..., references/...}
+└── openclaw/                               # OpenClaw / CLAWHUB（生成产物）
+    └── .agents/skills/ticktick-task/{SKILL.md, scripts/..., references/...}
 ```
+
+每个平台目录都**自包含**——把整个目录复制进你的配置即可。四个目录均为生成产物，见下方[维护](#维护)。
+
+## 维护
+
+四个平台目录（`claude-code/`、`codex/`、`hermes/`、`openclaw/`）都由 `scripts/build.py` 从
+`src/` 单源**生成**。请勿手改生成目录——改 `src/` 后重新生成。
+
+```bash
+python scripts/build.py          # 重新生成 4 个平台目录（幂等）
+python scripts/build.py --check  # 当且仅当工作区与生成器输出一致时退出码 0
+```
+
+流程：
+
+1. 改 `src/` 里的共享内容（`body.md`、`visualization.md`、`references/`、`scripts/templates/` …），
+   或 `src/platforms/<plat>/` 里的平台片段（`frontmatter.md`、`mcp-setup.md`、`tail.md`）。
+2. 运行 `python scripts/build.py`。
+3. review diff 后，**同时**提交 `src/` 与重新生成的目录。
+4. 运行 `python scripts/build.py --check` 确认工作区与生成器一致。
+
+构建是确定性的：统一 LF 行尾、每个文件单个末尾换行、无时间戳——连跑两次零 diff。
 
 ## 许可证
 

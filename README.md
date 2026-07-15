@@ -24,7 +24,7 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 - **Batch creation** — 3+ tasks in a single `batch_create_tasks` call
 
 **Quality guardrails**
-- **Deduplication** — always `search` before creating; skips creation when a match already exists
+- **Deduplication** — always `filter_tasks(status:[0])` before creating (the `search` tool is unreliable on this server); skips creation when a title match already exists
 - **No fabricated dates** — if the user didn't mention a date, it stays empty
 - **Smart priority** — auto-assigns `0/1/3/5` by deadline proximity (today/tomorrow → High, 3–7 days → Medium, >7 days → Low)
 
@@ -32,13 +32,17 @@ TickTick is great for capturing tasks; this skill gives your AI agent the *disci
 - **Dynamic project routing** — no hardcoded project IDs; discovers projects on first use and stores them in a local `config.json`
 - **Full lifecycle** — create, query, update, complete, and delete through a consistent tool surface
 
+**Visualization**
+- **Kanban dashboard** — say "生成看板" / "task dashboard" (or `/task-dashboard` on Claude Code) to render all undone tasks bucketed by deadline urgency; switch the columns between due-date / priority / project. Three built-in skins (colorful / claude / notion).
+- **Weekly report** — say "生成周报" (or `/week-report`) for a one-page A4 recap — this week's completed, overdue backlog, and next week's due — pulled live from TickTick into an HTML template and opened in your browser. Read-only snapshot; to change a task, say so in chat, the skill calls MCP, then you regenerate.
+
 ## How It Works
 
 ```
 "提醒我明天下午3点开会"
   → Parse:    title="开会", due_date=2026-06-25T15:00:00+0800, priority=5
   → Route:    resolve project from config.json (Inbox by default)
-  → Dedup:    search("开会") → no match
+  → Dedup:    filter_tasks(status:[0]) → no title match
   → Create:   create_task(task={"title":"开会", ...})
   → Confirm:  "已添加到滴答清单：开会 | 截止: 明天 15:00 | 优先级: 高"
 ```
@@ -194,6 +198,8 @@ After installation, try these with your agent:
 | `把这段通知加到滴答清单` + paste text | Notification parsed into a structured task |
 | `我有什么待办？` | Shows engaged + upcoming tasks |
 | `完成 XXX 任务` | Searches and completes the matching task |
+| `生成看板` | Renders the kanban dashboard in your browser (3 skins) |
+| `生成周报` | Renders a one-page weekly report in your browser |
 
 ## Configuration
 
@@ -211,27 +217,55 @@ A ready-to-edit template ships at each platform's `config.example.json`.
 
 ```
 ticktick-task-publish/
-├── README.md                                # This file
-├── README_CN.md                             # 中文说明
-├── hermes/                                  # Hermes Agent
-│   └── ticktick-task/
-│       ├── SKILL.md                         # Skill definition (YAML frontmatter + body)
-│       ├── config.example.json
-│       └── references/ticktick-mcp-tools-reference.md
-├── openclaw/                                # OpenClaw / CLAWHUB
-│   └── .agents/skills/ticktick-task/
-│       ├── SKILL.md
-│       ├── config.example.json
-│       └── references/ticktick-mcp-tools-reference.md
-├── claude-code/                             # Claude Code
-│   ├── .claude/skills/ticktick-task.md      # Skill instructions
-│   ├── scripts/config.example.json
-│   └── references/ticktick-mcp-tools-reference.md
-└── codex/                                   # OpenAI Codex
-    ├── codex.md                             # AGENTS.md-style instructions
-    ├── scripts/config.example.json
-    └── references/ticktick-mcp-tools-reference.md
+├── README.md  /  README_CN.md
+├── src/                                    # Single source of truth (edit here)
+│   ├── intro.md  body.md  visualization.md
+│   ├── references/                         # ticktick-mcp-tools-reference.md + visualization-reference.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   ├── commands/{task-dashboard.md, week-report.md}      # Claude Code slash commands
+│   └── platforms/<plat>/                  # frontmatter.md, mcp-setup.md, tail.md, <plat>.yml
+├── scripts/
+│   ├── build.py                            # Generator: src/ → 4 platform folders
+│   └── bootstrap_src.py                    # One-shot: derive src/ from a canonical install
+├── claude-code/                            # Claude Code (generated)
+│   ├── .claude/skills/ticktick-task.md
+│   ├── .claude/commands/{task-dashboard,week-report}.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   └── references/{ticktick-mcp-tools-reference, visualization-reference}.md
+├── codex/                                  # OpenAI Codex (generated)
+│   ├── codex.md
+│   ├── scripts/{oauth_login.py, config.example.json, templates/*.html}
+│   └── references/                         # same two reference files
+├── hermes/                                 # Hermes Agent (generated)
+│   └── ticktick-task/{SKILL.md, scripts/..., references/...}
+└── openclaw/                               # OpenClaw / CLAWHUB (generated)
+    └── .agents/skills/ticktick-task/{SKILL.md, scripts/..., references/...}
 ```
+
+Each platform folder is **self-contained** — copy the whole folder into your setup. The four
+folders are generated; see [Maintenance](#maintenance) below.
+
+## Maintenance
+
+The four platform folders (`claude-code/`, `codex/`, `hermes/`, `openclaw/`) are **generated**
+from the single source under `src/` by `scripts/build.py`. Never hand-edit the generated folders —
+edit `src/` and regenerate.
+
+```bash
+python scripts/build.py          # regenerate all 4 platform folders (idempotent)
+python scripts/build.py --check  # exit 0 iff the working tree matches the generator output
+```
+
+Workflow:
+
+1. Edit shared content in `src/` (`body.md`, `visualization.md`, `references/`, `scripts/templates/`,
+   …) or a platform fragment in `src/platforms/<plat>/` (`frontmatter.md`, `mcp-setup.md`, `tail.md`).
+2. Run `python scripts/build.py`.
+3. Review the diff, then commit **both** `src/` and the regenerated folders.
+4. Run `python scripts/build.py --check` to confirm the tree is in sync.
+
+The build is deterministic: LF line endings, one trailing newline per file, no timestamps — running
+it twice produces zero diff.
 
 ## Contributing
 
